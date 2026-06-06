@@ -13,8 +13,10 @@ class PackageStatus(str, Enum):
 
 class Package(SQLModel, table=True):
     id:          Optional[int] = Field(default=None, primary_key=True)
-    slot:        int  = Field(index=True)           # 物理格子编号，包裹取走后可复用
-    code:        str  = Field(index=True)            # = str(slot)，方便前端显示；不强制唯一
+    shelf:       int  = Field(index=True)   # 货架号，如 1 或 2
+    layer:       int  = Field(index=True)   # 层号，如 1-4
+    seq:         int  = Field(index=True)   # 全局顺序号，4 位显示，永不重置
+    code:        str  = Field(index=True)   # = "{shelf}-{layer}-{seq:04d}"，方便显示
     courier:     str
     employee_id: Optional[str] = None
     phone_tail:  Optional[str] = None

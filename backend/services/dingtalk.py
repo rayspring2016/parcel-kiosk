@@ -40,11 +40,14 @@ class DingTalkClient:
         return data.get("result", {}).get("userid")
 
     async def send_pickup_notification(
-        self, user_id: str, slot: int, courier: str, pickup_url: str
+        self, user_id: str, code: str, courier: str, pickup_url: str
     ) -> bool:
-        """蓝色 OA 通知：快递到了，请到格子 {slot} 取件"""
+        """蓝色 OA 通知：快递到了，位置编号 code (如 1-2-0001)"""
         from datetime import datetime
         arrived_str = datetime.now().strftime("%Y/%m/%d %H:%M")
+        # 解析 shelf/layer 用于提示文字
+        parts = code.split("-")
+        location_hint = f"货架 {parts[0]} — 第 {parts[1]} 层" if len(parts) == 3 else code
         data = await self._request(
             "POST",
             "/topapi/message/corpconversation/asyncsend_v2",
@@ -61,12 +64,13 @@ class DingTalkClient:
                             "text": "你有快递到了！"
                         },
                         "body": {
-                            "title": f"格子编号：{slot:02d}",
+                            "title": f"取件编号：{code}",
                             "form": [
-                                {"key": "快递公司", "value": courier},
-                                {"key": "到件时间", "value": arrived_str},
+                                {"key": "位置",     "value": location_hint},
+                                {"key": "快递公司",  "value": courier},
+                                {"key": "到件时间",  "value": arrived_str},
                             ],
-                            "content": f"请到快递间货架找 {slot:02d} 号格取件，点击「已取件」完成确认。"
+                            "content": f"请到快递间找编号 {code} 的包裹取件，点击「已取件」完成确认。"
                         }
                     }
                 }
@@ -74,7 +78,7 @@ class DingTalkClient:
         )
         return data.get("errcode") == 0
 
-    async def send_reminder(self, user_id: str, slot: int, pickup_url: str) -> bool:
+    async def send_reminder(self, user_id: str, code: str, pickup_url: str) -> bool:
         """橙色提醒：超过 48h 未取件"""
         data = await self._request(
             "POST",
@@ -92,8 +96,8 @@ class DingTalkClient:
                             "text": "快递待取件提醒"
                         },
                         "body": {
-                            "title": f"格子编号：{slot:02d}",
-                            "content": f"你放在 {slot:02d} 号格的快递已超过 48 小时未取，请尽快领取。"
+                            "title": f"取件编号：{code}",
+                            "content": f"编号 {code} 的快递已超过 48 小时未取，请尽快领取。"
                         }
                     }
                 }

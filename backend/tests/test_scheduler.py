@@ -28,7 +28,8 @@ def _make_session_mock(real_session):
 @pytest.mark.asyncio
 async def test_send_reminders_calls_dingtalk(mem_session):
     old_pkg = Package(
-        slot=1, code="1", courier="顺丰", employee_id="user123",
+        shelf=1, layer=1, seq=1, code="1-1-0001",
+        courier="顺丰", employee_id="user123",
         arrived_at=datetime.now() - timedelta(hours=50)
     )
     mem_session.add(old_pkg); mem_session.commit()
@@ -40,12 +41,15 @@ async def test_send_reminders_calls_dingtalk(mem_session):
         from scheduler import send_reminders
         await send_reminders()
     mock_dt.send_reminder.assert_called_once()
+    # 验证传入的 code 格式正确
+    call_args = mock_dt.send_reminder.call_args
+    assert call_args.args[1] == "1-1-0001"
 
 
 @pytest.mark.asyncio
 async def test_expire_old_packages(mem_session):
     old_pkg = Package(
-        slot=2, code="2", courier="京东",
+        shelf=1, layer=2, seq=2, code="1-2-0002", courier="京东",
         arrived_at=datetime.now() - timedelta(days=8)
     )
     mem_session.add(old_pkg); mem_session.commit()
@@ -61,7 +65,7 @@ async def test_expire_old_packages(mem_session):
 @pytest.mark.asyncio
 async def test_pending_not_expired(mem_session):
     recent_pkg = Package(
-        slot=3, code="3", courier="圆通",
+        shelf=2, layer=1, seq=3, code="2-1-0003", courier="圆通",
         arrived_at=datetime.now() - timedelta(days=3)
     )
     mem_session.add(recent_pkg); mem_session.commit()

@@ -43,8 +43,8 @@ def test_scan_matched(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["matched"] is True
-    assert data["slot"] == 1          # 第一个包裹应分配格子 1
-    assert data["code"] == "1"
+    assert data["code"] == "1-1-0001"   # 首个包裹：货架1 第1层 序号0001
+    assert "pkg_id" in data
 
 
 def test_scan_unmatched(client):
@@ -64,5 +64,5 @@ def test_scan_unmatched(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["matched"] is False
-    assert data["slot"] == 1
-    assert "待认领" in data["code"]
+    assert data["code"] == "1-1-0001"   # 未认领格式相同，都是 shelf-layer-seq
+    assert "pkg_id" in data

@@ -13,7 +13,7 @@
       <text a:if="{{item.phone_tail}}" class="hint">
         收件手机尾号：{{item.phone_tail}}
       </text>
-      <button class="btn btn-secondary" onTap="onClaim" data-code="{{item.code}}">
+      <button class="btn btn-secondary" onTap="onClaim" data-pkgid="{{item.pkg_id}}" data-code="{{item.code}}">
         这是我的包裹
       </button>
     </view>

@@ -25,7 +25,7 @@ async def send_reminders():
         for pkg in pkgs:
             pickup_url = f"{SERVER_BASE_URL}/pickup/confirm/{pkg.id}"
             try:
-                ok = await dt.send_reminder(pkg.employee_id, pkg.slot, pickup_url)
+                ok = await dt.send_reminder(pkg.employee_id, pkg.code, pickup_url)
                 if ok:
                     sent += 1
             except Exception as e:

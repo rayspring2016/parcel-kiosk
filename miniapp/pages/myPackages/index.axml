@@ -12,7 +12,7 @@
       <text class="meta">到件：{{item.arrived_at}}</text>
 
       <view a:if="{{item.status === 'pending'}}">
-        <button class="btn" onTap="onPickup" data-code="{{item.code}}">
+        <button class="btn" onTap="onPickup" data-pkgid="{{item.pkg_id}}" data-code="{{item.code}}">
           ✅ 我已取件
         </button>
       </view>

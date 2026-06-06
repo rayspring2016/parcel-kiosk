@@ -29,7 +29,8 @@ Page({
   },
 
   async onClaim(e) {
-    const code = e.currentTarget.dataset.code
+    const pkgId = e.currentTarget.dataset.pkgid
+    const code  = e.currentTarget.dataset.code
     const { data: userId } = dd.getStorageSync({ key: "userId" })
 
     dd.confirm({
@@ -41,14 +42,14 @@ Page({
         if (!res.confirm) return
         try {
           await dd.httpRequest({
-            url: `${API}/unclaimed/${code}/claim`,
+            url: `${API}/unclaimed/${pkgId}/claim`,
             method: "POST",
             data: JSON.stringify({ employee_id: userId }),
             headers: { "Content-Type": "application/json" }
           })
           dd.alert({
             title: "认领成功",
-            content: `包裹 ${code} 已归入你的名下，请到快递间对应编号处取件`
+            content: `包裹 ${code} 已归入你的名下，请到对应位置取件`
           })
           await this.fetchUnclaimed()
         } catch (e) {

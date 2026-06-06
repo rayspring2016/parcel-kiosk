@@ -8,15 +8,12 @@ Page({
   },
 
   async onLoad() {
-    // 钉钉小程序通过 dd.getAuthCode + 后端换取 userId
-    // 开发阶段从 Storage 读取（正式上线时替换为 dd.getAuthCode）
     const { data: userId } = dd.getStorageSync({ key: "userId" })
     this.setData({ userId: userId || "" })
     await this.fetchPackages()
   },
 
   onShow() {
-    // 从取件确认页返回时刷新列表
     this.fetchPackages()
   },
 
@@ -35,13 +32,14 @@ Page({
   },
 
   async onPickup(e) {
-    const code = e.currentTarget.dataset.code
+    const pkgId = e.currentTarget.dataset.pkgid
+    const code  = e.currentTarget.dataset.code
     try {
       await dd.httpRequest({
-        url: `${API}/pickup/${code}/confirm`,
-        method: "GET"
+        url: `${API}/pickup/${pkgId}`,
+        method: "POST"
       })
-      dd.showToast({ content: "取件确认成功", type: "success" })
+      dd.showToast({ content: `${code} 取件确认成功`, type: "success" })
       await this.fetchPackages()
     } catch (e) {
       dd.alert({ title: "操作失败", content: e.message || "请重试" })

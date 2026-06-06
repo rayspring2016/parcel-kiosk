@@ -26,35 +26,36 @@ def client(session):
 
 
 def test_list_unclaimed(client, session):
-    session.add(Package(slot=5, code="待认领-05", courier="圆通",
+    session.add(Package(shelf=1, layer=2, seq=5, code="1-2-0005", courier="圆通",
                         status=PackageStatus.unclaimed))
-    session.add(Package(slot=6, code="6", courier="顺丰", employee_id="u1"))
+    session.add(Package(shelf=1, layer=1, seq=6, code="1-1-0006", courier="顺丰", employee_id="u1"))
     session.commit()
     resp = client.get("/unclaimed")
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["slot"] == 5
+    assert data[0]["code"] == "1-2-0005"
 
 
 def test_claim_package(client, session):
-    session.add(Package(slot=5, code="待认领-05", courier="京东",
-                        status=PackageStatus.unclaimed))
-    session.commit()
-    resp = client.post("/unclaimed/5/claim", json={"employee_id": "user_xyz"})
+    pkg = Package(shelf=1, layer=2, seq=5, code="1-2-0005", courier="京东",
+                  status=PackageStatus.unclaimed)
+    session.add(pkg); session.commit(); session.refresh(pkg)
+    resp = client.post(f"/unclaimed/{pkg.id}/claim", json={"employee_id": "user_xyz"})
     assert resp.status_code == 200
-    assert resp.json()["employee_id"] == "user_xyz"
-    assert resp.json()["slot"] == 5
+    data = resp.json()
+    assert data["employee_id"] == "user_xyz"
+    assert data["code"] == "1-2-0005"
 
 
 def test_claim_not_found(client):
-    resp = client.post("/unclaimed/99/claim", json={"employee_id": "user_xyz"})
+    resp = client.post("/unclaimed/9999/claim", json={"employee_id": "user_xyz"})
     assert resp.status_code == 404
 
 
 def test_claim_wrong_status(client, session):
-    session.add(Package(slot=8, code="8", courier="顺丰",
-                        status=PackageStatus.pending, employee_id="user_abc"))
-    session.commit()
-    resp = client.post("/unclaimed/8/claim", json={"employee_id": "user_xyz"})
-    assert resp.status_code == 404   # pending 包裹不在 unclaimed 查询里
+    pkg = Package(shelf=2, layer=1, seq=8, code="2-1-0008", courier="顺丰",
+                  status=PackageStatus.pending, employee_id="user_abc")
+    session.add(pkg); session.commit(); session.refresh(pkg)
+    resp = client.post(f"/unclaimed/{pkg.id}/claim", json={"employee_id": "user_xyz"})
+    assert resp.status_code == 404   # pending 状态不能认领

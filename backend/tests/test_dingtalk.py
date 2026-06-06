@@ -27,7 +27,7 @@ async def test_get_user_by_phone_not_found(client):
 async def test_send_pickup_notification(client):
     with patch.object(client, "_request", new=AsyncMock(return_value={"errcode": 0})):
         ok = await client.send_pickup_notification(
-            user_id="user_abc123", slot=7, courier="顺丰",
+            user_id="user_abc123", code="1-2-0007", courier="顺丰",
             pickup_url="http://localhost:8000/pickup/confirm/42"
         )
     assert ok is True
@@ -37,7 +37,7 @@ async def test_send_pickup_notification(client):
 async def test_send_reminder(client):
     with patch.object(client, "_request", new=AsyncMock(return_value={"errcode": 0})):
         ok = await client.send_reminder(
-            user_id="user_abc123", slot=7,
+            user_id="user_abc123", code="1-2-0007",
             pickup_url="http://localhost:8000/pickup/confirm/42"
         )
     assert ok is True
@@ -68,6 +68,6 @@ async def test_token_expires_and_refreshes(client):
             mock_cls.return_value.__aenter__ = AsyncMock(return_value=mock_http)
             mock_cls.return_value.__aexit__  = AsyncMock(return_value=None)
             await client.send_pickup_notification(
-                "u1", 5, "顺丰", "http://x/pickup/confirm/1"
+                "u1", "1-1-0005", "顺丰", "http://x/pickup/confirm/1"
             )
     assert refreshed

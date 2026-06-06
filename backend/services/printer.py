@@ -17,12 +17,14 @@ class PrinterService:
         p.set(align="center", bold=False, height=1, width=1)
         p.cut()
 
-    def print_label(self, slot: int, courier: str, arrived_at: str):
-        """正常标签：格子号最大，快递公司次之"""
-        self._print_lines([f"{slot:02d} 号格", courier, f"到件：{arrived_at}"])
+    def print_label(self, shelf: int, layer: int, seq: int, courier: str, arrived_at: str):
+        """正常标签：位置编号最大，快递公司次之"""
+        code = f"{shelf}-{layer}-{seq:04d}"
+        self._print_lines([code, f"货架{shelf} 第{layer}层", courier, f"到件：{arrived_at}"])
 
-    def print_unclaimed_label(self, slot: int, courier: str, arrived_at: str):
-        self._print_lines(["【待认领】", f"{slot:02d} 号格", courier, f"到件：{arrived_at}"])
+    def print_unclaimed_label(self, shelf: int, layer: int, seq: int, courier: str, arrived_at: str):
+        code = f"{shelf}-{layer}-{seq:04d}"
+        self._print_lines(["【待认领】", code, f"货架{shelf} 第{layer}层", courier, f"到件：{arrived_at}"])
 
 
 _printer_instance: Optional[PrinterService] = None

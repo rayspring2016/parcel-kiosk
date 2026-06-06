@@ -27,43 +27,46 @@ def client(session):
 
 
 def test_pickup_success(client, session):
-    session.add(Package(slot=7, code="7", courier="顺丰", employee_id="user123"))
-    session.commit()
-    resp = client.post("/pickup/7")
+    pkg = Package(shelf=1, layer=2, seq=7, code="1-2-0007", courier="顺丰", employee_id="user123")
+    session.add(pkg); session.commit(); session.refresh(pkg)
+    resp = client.post(f"/pickup/{pkg.id}")
     assert resp.status_code == 200
-    assert resp.json()["status"] == "picked_up"
-    assert resp.json()["slot"] == 7
+    data = resp.json()
+    assert data["status"] == "picked_up"
+    assert data["code"] == "1-2-0007"
 
 
 def test_pickup_not_found(client):
-    resp = client.post("/pickup/99")
+    resp = client.post("/pickup/9999")
     assert resp.status_code == 404
 
 
 def test_pickup_already_done(client, session):
-    session.add(Package(
-        slot=7, code="7", courier="京东", employee_id="user123",
+    pkg = Package(
+        shelf=1, layer=2, seq=7, code="1-2-0007", courier="京东", employee_id="user123",
         status=PackageStatus.picked_up, picked_at=datetime.now()
-    ))
-    session.commit()
-    resp = client.post("/pickup/7")
-    assert resp.status_code == 404   # picked_up 包裹在查询中不存在
+    )
+    session.add(pkg); session.commit(); session.refresh(pkg)
+    resp = client.post(f"/pickup/{pkg.id}")
+    assert resp.status_code == 404   # picked_up 状态拒绝重复取件
 
 
 def test_my_packages(client, session):
-    session.add(Package(slot=3, code="3", courier="顺丰", employee_id="user123"))
-    session.add(Package(slot=4, code="4", courier="京东", employee_id="user456"))
+    session.add(Package(shelf=1, layer=1, seq=3, code="1-1-0003", courier="顺丰", employee_id="user123"))
+    session.add(Package(shelf=1, layer=2, seq=4, code="1-2-0004", courier="京东", employee_id="user456"))
     session.commit()
     resp = client.get("/my-packages?employee_id=user123")
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["slot"] == 3
+    assert data[0]["code"] == "1-1-0003"
+    assert data[0]["shelf"] == 1
+    assert data[0]["layer"] == 1
 
 
 def test_get_confirm_page(client, session):
-    pkg = Package(slot=5, code="5", courier="圆通", employee_id="user123")
+    pkg = Package(shelf=2, layer=3, seq=5, code="2-3-0005", courier="圆通", employee_id="user123")
     session.add(pkg); session.commit(); session.refresh(pkg)
     resp = client.get(f"/pickup/confirm/{pkg.id}")
     assert resp.status_code == 200
-    assert "05" in resp.text   # slot 5 formatted as 05
+    assert "2-3-0005" in resp.text
