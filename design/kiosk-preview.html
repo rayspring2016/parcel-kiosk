@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>Kiosk 扫码机界面预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #09090b;
+    --surface: #111113;
+    --border: #1f1f23;
+    --zinc-400: #a1a1aa;
+    --zinc-500: #71717a;
+    --zinc-600: #52525b;
+    --zinc-800: #27272a;
+    --zinc-100: #f4f4f5;
+    --emerald: #34d399;
+    --red: #f87171;
+    --font: 'Geist', sans-serif;
+    --mono: 'Geist Mono', monospace;
+  }
+
+  html, body {
+    width: 1280px;
+    height: 800px;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--zinc-100);
+  }
+
+  .screen {
+    width: 1280px;
+    height: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rings {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+  }
+  .ring-1 { width: 480px; height: 480px; animation: pulse-ring 4s ease-in-out infinite; }
+  .ring-2 { width: 680px; height: 680px; animation: pulse-ring 4s ease-in-out infinite 0.6s; }
+  .ring-3 { width: 880px; height: 880px; animation: pulse-ring 4s ease-in-out infinite 1.2s; }
+
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 0.25; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.012); }
+  }
+
+  .courier-strip {
+    position: absolute;
+    bottom: 36px;
+    left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    z-index: 2;
+  }
+  .courier-tag {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--zinc-600);
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: opacity 0.38s cubic-bezier(0.16,1,0.3,1), transform 0.38s cubic-bezier(0.16,1,0.3,1);
+  }
+  .content.hidden { opacity: 0; transform: translateY(14px); pointer-events: none; display: none; }
+  .content.visible { opacity: 1; transform: translateY(0); display: flex; }
+
+  /* IDLE */
+  .icon-box {
+    width: 88px; height: 88px;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 40px;
+    animation: float 5s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-7px); }
+  }
+  .icon-box.green {
+    background: rgba(52,211,153,0.07);
+    border-color: rgba(52,211,153,0.2);
+    box-shadow: inset 0 1px 0 rgba(52,211,153,0.1);
+    animation: none;
+  }
+  .icon-box.red {
+    background: rgba(248,113,113,0.07);
+    border-color: rgba(248,113,113,0.2);
+    box-shadow: inset 0 1px 0 rgba(248,113,113,0.1);
+    animation: none;
+  }
+
+  .idle-title { font-size: 54px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin-bottom: 14px; }
+  .idle-sub   { font-size: 17px; color: var(--zinc-500); letter-spacing: -0.01em; }
+
+  .scan-pill {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 44px;
+    padding: 9px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    background: var(--emerald);
+    border-radius: 50%;
+    animation: blink 1.4s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+  .scan-pill span { font-size: 12px; font-weight: 500; color: var(--zinc-400); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* SUCCESS */
+  .code-label { font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--zinc-500); margin-bottom: 10px; }
+  .code-number { font-family: var(--mono); font-size: 100px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--emerald); margin-bottom: 28px; }
+  .success-note { font-size: 19px; font-weight: 400; color: var(--zinc-400); letter-spacing: -0.01em; }
+  .bar-wrap { margin-top: 44px; width: 200px; height: 2px; background: var(--zinc-800); border-radius: 2px; overflow: hidden; }
+  .bar { height: 100%; background: var(--emerald); border-radius: 2px; animation: shrink 4s linear forwards; }
+  @keyframes shrink { from{width:100%} to{width:0%} }
+
+  /* ERROR */
+  .error-title { font-size: 42px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 14px; }
+  .error-sub   { font-size: 17px; color: var(--zinc-500); }
+
+  /* Controls */
+  .controls {
+    position: fixed; bottom: 14px; right: 14px;
+    display: flex; gap: 8px; z-index: 99;
+    align-items: center;
+  }
+  .ctrl-label { font-size: 10px; color: var(--zinc-600); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 4px; }
+  .ctrl-btn {
+    padding: 5px 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    color: var(--zinc-400);
+    font-size: 11px; font-family: var(--font);
+    cursor: pointer; letter-spacing: 0.04em; text-transform: uppercase;
+    transition: background 0.18s;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.1); color: var(--zinc-100); }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <div class="rings">
+    <div class="ring ring-1"></div>
+    <div class="ring ring-2"></div>
+    <div class="ring ring-3"></div>
+  </div>
+
+  <!-- IDLE -->
+  <div class="content visible" id="s-idle">
+    <div class="icon-box">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        <line x1="10" y1="6.5" x2="14" y2="6.5"/><line x1="10" y1="17.5" x2="14" y2="17.5"/>
+        <line x1="6.5" y1="10" x2="6.5" y2="14"/><line x1="17.5" y1="10" x2="17.5" y2="14"/>
+      </svg>
+    </div>
+    <div class="idle-title">扫描包裹条码</div>
+    <div class="idle-sub">请将包裹上的条码对准扫描区域</div>
+    <div class="scan-pill"><div class="dot"></div><span>等待扫描</span></div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="content hidden" id="s-success">
+    <div class="icon-box green">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <div class="code-label">包裹编号</div>
+    <div class="code-number" id="code-num">0606-023</div>
+    <div class="success-note">标签已打印 — 请取出并贴到包裹上</div>
+    <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+  </div>
+
+  <!-- ERROR -->
+  <div class="content hidden" id="s-error">
+    <div class="icon-box red">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </div>
+    <div class="error-title">扫描失败</div>
+    <div class="error-sub">条码无法识别，请重新扫描</div>
+  </div>
+
+  <div class="courier-strip">
+    <div class="courier-tag">顺丰</div>
+    <div class="courier-tag">京东</div>
+    <div class="courier-tag">圆通</div>
+    <div class="courier-tag">中通</div>
+    <div class="courier-tag">申通</div>
+    <div class="courier-tag">韵达</div>
+    <div class="courier-tag">EMS</div>
+  </div>
+</div>
+
+<div class="controls">
+  <span class="ctrl-label">预览状态</span>
+  <button class="ctrl-btn" onclick="go('idle')">待机</button>
+  <button class="ctrl-btn" onclick="go('success')">成功</button>
+  <button class="ctrl-btn" onclick="go('error')">失败</button>
+</div>
+
+<script>
+  let t = null;
+  function go(state) {
+    clearTimeout(t);
+    ['idle','success','error'].forEach(s => {
+      const el = document.getElementById('s-'+s);
+      el.classList.replace('visible','hidden');
+    });
+    const el = document.getElementById('s-'+state);
+    el.style.display = 'flex';
+    el.classList.remove('hidden');
+    requestAnimationFrame(() => el.classList.add('visible'));
+
+    if (state === 'success') {
+      const bar = document.getElementById('bar');
+      bar.style.animation = 'none'; bar.offsetHeight;
+      bar.style.animation = 'shrink 4s linear forwards';
+      t = setTimeout(() => go('idle'), 4000);
+    }
+    if (state === 'error') t = setTimeout(() => go('idle'), 3000);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>员工小程序界面预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f4f5;
+    --white: #ffffff;
+    --border: #e4e4e7;
+    --zinc-900: #18181b;
+    --zinc-700: #3f3f46;
+    --zinc-500: #71717a;
+    --zinc-400: #a1a1aa;
+    --zinc-200: #e4e4e7;
+    --zinc-100: #f4f4f5;
+    --emerald-600: #059669;
+    --emerald-50:  #ecfdf5;
+    --amber-500: #f59e0b;
+    --amber-50:  #fffbeb;
+    --amber-200: #fde68a;
+    --font: 'Geist', -apple-system, sans-serif;
+    --mono: 'Geist Mono', monospace;
+  }
+
+  body {
+    background: #d4d4d8;
+    font-family: var(--font);
+    display: flex;
+    gap: 32px;
+    padding: 32px;
+    min-height: 100vh;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: var(--bg);
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .status-bar {
+    height: 44px;
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+  }
+  .status-time { font-size: 15px; font-weight: 600; color: var(--zinc-900); }
+  .status-icons { display: flex; gap: 5px; align-items: center; color: var(--zinc-900); }
+
+  .nav-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .nav-back { color: var(--zinc-500); display:flex; align-items:center; }
+  .nav-title { font-size: 17px; font-weight: 600; color: var(--zinc-900); letter-spacing: -0.02em; }
+
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  .section-head {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--zinc-400);
+    padding: 8px 4px 4px;
+  }
+
+  .pkg-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.18s cubic-bezier(0.16,1,0.3,1);
+    cursor: pointer;
+  }
+  .pkg-card:active { transform: scale(0.985); }
+
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+
+  .courier-badge {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    padding: 3px 10px; border-radius: 6px; text-transform: uppercase;
+  }
+  .sf  { background: #fef3c7; color: #92400e; }
+  .jd  { background: #fee2e2; color: #991b1b; }
+  .yt  { background: #e0f2fe; color: #0c4a6e; }
+  .zt  { background: #f0fdf4; color: #14532d; }
+  .ems { background: #ede9fe; color: #4c1d95; }
+  .yd  { background: #fff7ed; color: #9a3412; }
+
+  .arrive-time { font-size: 12px; color: var(--zinc-400); }
+
+  .code-row {
+    font-family: var(--mono);
+    font-size: 28px; font-weight: 600;
+    letter-spacing: -0.02em; line-height: 1;
+    color: var(--zinc-900);
+  }
+
+  .card-bottom { display: flex; align-items: center; justify-content: space-between; }
+
+  .status-chip {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 500;
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .chip-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .pending  { background: var(--amber-50); color: var(--amber-500); }
+  .pending .chip-dot { background: var(--amber-500); animation: blink 1.4s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .done { background: var(--zinc-100); color: var(--zinc-400); }
+  .done .chip-dot { background: var(--zinc-400); }
+
+  .pickup-btn {
+    padding: 8px 18px;
+    background: var(--zinc-900); color: #fff;
+    font-size: 13px; font-weight: 600;
+    border-radius: 10px; border: none;
+    cursor: pointer; font-family: var(--font);
+    letter-spacing: -0.01em;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .pickup-btn:hover  { opacity: 0.85; }
+  .pickup-btn:active { transform: scale(0.96); }
+
+  /* Claim card */
+  .claim-card {
+    background: var(--white);
+    border-radius: 16px; padding: 16px;
+    border: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .claim-meta { display: flex; align-items: center; justify-content: space-between; }
+  .unclaimed-code {
+    font-family: var(--mono); font-size: 20px; font-weight: 600;
+    color: var(--zinc-900); letter-spacing: -0.02em;
+  }
+  .phone-hint {
+    font-size: 14px; color: var(--zinc-500);
+    padding: 10px 14px;
+    background: var(--zinc-100);
+    border-radius: 10px;
+    letter-spacing: -0.01em;
+  }
+  .phone-digits {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--zinc-900); letter-spacing: 0.08em;
+  }
+  .claim-code-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--zinc-100);
+    border-radius: 10px;
+  }
+  .claim-code-label {
+    font-size: 12px;
+    color: var(--zinc-400);
+    font-weight: 500;
+  }
+  .claim-code {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--zinc-900);
+    letter-spacing: 0.02em;
+  }
+
+  .claim-btn {
+    width: 100%; padding: 13px;
+    background: var(--zinc-900); color: #fff;
+    font-size: 14px; font-weight: 600;
+    border-radius: 12px; border: none;
+    cursor: pointer; font-family: var(--font);
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .claim-btn:hover  { opacity: 0.85; }
+  .claim-btn:active { transform: scale(0.98); }
+
+  .info-banner {
+    margin: 12px 16px 0;
+    padding: 12px 14px;
+    background: #fffbeb;
+    border: 1px solid var(--amber-200);
+    border-radius: 12px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .info-banner svg { flex-shrink: 0; margin-top: 1px; }
+  .info-banner p { font-size: 12px; color: #92400e; line-height: 1.5; }
+
+  .tab-bar {
+    height: 80px; background: var(--white);
+    border-top: 1px solid var(--border);
+    display: flex; padding-bottom: 16px; flex-shrink: 0;
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px; cursor: pointer;
+  }
+  .tab span { font-size: 10px; font-weight: 500; color: var(--zinc-400); }
+  .tab.active svg { color: var(--zinc-900); }
+  .tab.active span { color: var(--zinc-900); font-weight: 600; }
+  .tab:not(.active) svg { color: var(--zinc-400); }
+
+  .phone-wrap { display: flex; flex-direction: column; }
+  .phone-label {
+    text-align: center; margin-top: 16px;
+    font-size: 12px; font-weight: 500; color: #71717a;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- PHONE 1: 我的包裹 -->
+<div class="phone-wrap">
+<div class="phone">
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="3" width="3" height="9" rx="0.5"/><rect x="4.5" y="2" width="3" height="10" rx="0.5"/><rect x="9" y="0" width="3" height="12" rx="0.5"/><rect x="13.5" y="0" width="2.5" height="12" rx="0.5" opacity="0.3"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor"><rect x="0" y="1" width="21" height="10" rx="2" stroke="currentColor" stroke-width="1" fill="none" opacity="0.35"/><rect x="1.5" y="2.5" width="15" height="7" rx="1.2"/></svg>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <div class="nav-back"><svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 1 1 8.5 9 16"/></svg></div>
+    <div class="nav-title">我的包裹</div>
+  </div>
+
+  <div class="scroll-area">
+    <div class="section-head">待取件 · 2件</div>
+
+    <div class="pkg-card">
+      <div class="card-top">
+        <span class="courier-badge sf">顺丰</span>
+        <span class="arrive-time">今天 14:32</span>
+      </div>
+      <div class="code-row">0606-023</div>
+      <div class="card-bottom">
+        <div class="status-chip pending"><div class="chip-dot"></div>待取件</div>
+        <button class="pickup-btn">已取件</button>
+      </div>
+    </div>
+
+    <div class="pkg-card">
+      <div class="card-top">
+        <span class="courier-badge jd">京东</span>
+        <span class="arrive-time">今天 11:07</span>
+      </div>
+      <div class="code-row">0606-011</div>
+      <div class="card-bottom">
+        <div class="status-chip pending"><div class="chip-dot"></div>待取件</div>
+        <button class="pickup-btn">已取件</button>
+      </div>
+    </div>
+
+    <div class="section-head" style="margin-top:8px">已取件 · 2件</div>
+
+    <div class="pkg-card" style="opacity:0.5">
+      <div class="card-top">
+        <span class="courier-badge yt">圆通</span>
+        <span class="arrive-time">06/04 09:15</span>
+      </div>
+      <div class="code-row" style="color:#a1a1aa">0604-006</div>
+      <div class="card-bottom">
+        <div class="status-chip done"><div class="chip-dot"></div>已取件</div>
+      </div>
+    </div>
+
+    <div class="pkg-card" style="opacity:0.5">
+      <div class="card-top">
+        <span class="courier-badge zt">中通</span>
+        <span class="arrive-time">06/02 16:44</span>
+      </div>
+      <div class="code-row" style="color:#a1a1aa">0602-031</div>
+      <div class="card-bottom">
+        <div class="status-chip done"><div class="chip-dot"></div>已取件</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab active">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/></svg>
+      <span>我的包裹</span>
+    </div>
+    <div class="tab">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>待认领</span>
+    </div>
+  </div>
+</div>
+<div class="phone-label">我的包裹</div>
+</div>
+
+<!-- PHONE 2: 待认领 -->
+<div class="phone-wrap">
+<div class="phone">
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="3" width="3" height="9" rx="0.5"/><rect x="4.5" y="2" width="3" height="10" rx="0.5"/><rect x="9" y="0" width="3" height="12" rx="0.5"/><rect x="13.5" y="0" width="2.5" height="12" rx="0.5" opacity="0.3"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor"><rect x="0" y="1" width="21" height="10" rx="2" stroke="currentColor" stroke-width="1" fill="none" opacity="0.35"/><rect x="1.5" y="2.5" width="15" height="7" rx="1.2"/></svg>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <div class="nav-back"><svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 1 1 8.5 9 16"/></svg></div>
+    <div class="nav-title">待认领包裹</div>
+  </div>
+
+  <div class="info-banner">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <p>以下包裹未能自动匹配员工，可能使用了私人手机号收件。如有你的包裹请认领。</p>
+  </div>
+
+  <div class="scroll-area" style="margin-top:4px">
+    <div class="section-head">未匹配 · 3件</div>
+
+    <div class="claim-card">
+      <div class="claim-meta">
+        <span class="courier-badge ems">EMS</span>
+        <span class="arrive-time">今天 10:18</span>
+      </div>
+      <div class="phone-hint">收件手机尾号 <span class="phone-digits">3847</span></div>
+      <div class="claim-code-row">
+        <span class="claim-code-label">货架编号</span>
+        <span class="claim-code">待认领-0606-024</span>
+      </div>
+      <button class="claim-btn">这是我的包裹</button>
+    </div>
+
+    <div class="claim-card">
+      <div class="claim-meta">
+        <span class="courier-badge sf">顺丰</span>
+        <span class="arrive-time">今天 09:43</span>
+      </div>
+      <div class="phone-hint">收件手机尾号 <span class="phone-digits">0291</span></div>
+      <div class="claim-code-row">
+        <span class="claim-code-label">货架编号</span>
+        <span class="claim-code">待认领-0606-018</span>
+      </div>
+      <button class="claim-btn">这是我的包裹</button>
+    </div>
+
+    <div class="claim-card">
+      <div class="claim-meta">
+        <span class="courier-badge yd">韵达</span>
+        <span class="arrive-time">昨天 17:22</span>
+      </div>
+      <div class="phone-hint">收件手机尾号 <span class="phone-digits">5513</span></div>
+      <div class="claim-code-row">
+        <span class="claim-code-label">货架编号</span>
+        <span class="claim-code">待认领-0605-037</span>
+      </div>
+      <button class="claim-btn">这是我的包裹</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/></svg>
+      <span>我的包裹</span>
+    </div>
+    <div class="tab active">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>待认领</span>
+    </div>
+  </div>
+</div>
+<div class="phone-label">待认领包裹</div>
+</div>
+
+</body>
+</html>
