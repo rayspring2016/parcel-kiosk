@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, delete
 from database import get_session
 from models import Employee
@@ -7,6 +7,16 @@ from config import DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID
 from datetime import datetime
 
 router = APIRouter()
+
+
+@router.get("/auth/dingtalk")
+async def dingtalk_auth(code: str):
+    """小程序免登：用授权码换取 userId"""
+    dt   = DingTalkClient(DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID)
+    data = await dt._request("GET", "/user/getuserinfo", params={"code": code})
+    if data.get("errcode") != 0:
+        raise HTTPException(status_code=401, detail=data.get("errmsg", "授权失败"))
+    return {"user_id": data.get("userid", "")}
 
 
 @router.post("/employees/sync")

@@ -8,8 +8,9 @@ Page({
   },
 
   async onLoad() {
-    const { data: userId } = dd.getStorageSync({ key: "userId" })
-    this.setData({ userId: userId || "" })
+    const userId = getApp().globalData.userId ||
+                   dd.getStorageSync({ key: "userId" }).data || ""
+    this.setData({ userId })
     await this.fetchPackages()
   },
 
