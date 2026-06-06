@@ -12,8 +12,9 @@ COURIER_MAP = {
 
 @dataclass
 class BarcodeResult:
-    phone: Optional[str]
-    courier: str = "未知"
+    phone:         Optional[str]
+    courier:       str = "未知"
+    tracking_tail: str = ""    # 条码尾4位，用于推送展示，不暴露完整单号
 
 
 def _detect_courier(text: str) -> str:
@@ -34,13 +35,13 @@ def parse_barcode(raw: str) -> BarcodeResult:
         phone = data.get("mobile") or data.get("phone") or data.get("receiverMobile")
         courier_code = data.get("courier", "")
         courier = COURIER_MAP.get(courier_code.upper(), _detect_courier(raw))
-        return BarcodeResult(phone=phone, courier=courier)
+        return BarcodeResult(phone=phone, courier=courier, tracking_tail=raw[-4:])
     except (json.JSONDecodeError, AttributeError):
         pass
 
     parts = raw.split("|")
     if len(parts) >= 2 and parts[0].upper() in COURIER_MAP:
         phone = _extract_phone(parts[1]) or _extract_phone(raw)
-        return BarcodeResult(phone=phone, courier=COURIER_MAP[parts[0].upper()])
+        return BarcodeResult(phone=phone, courier=COURIER_MAP[parts[0].upper()], tracking_tail=raw[-4:])
 
-    return BarcodeResult(phone=_extract_phone(raw), courier=_detect_courier(raw))
+    return BarcodeResult(phone=_extract_phone(raw), courier=_detect_courier(raw), tracking_tail=raw[-4:])

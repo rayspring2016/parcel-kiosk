@@ -23,3 +23,11 @@ class Package(SQLModel, table=True):
     status:      PackageStatus = PackageStatus.pending
     arrived_at:  datetime = Field(default_factory=datetime.now)
     picked_at:   Optional[datetime] = None
+
+
+class Employee(SQLModel, table=True):
+    """钉钉员工本地缓存：只存 phone_tail（尾4位），保护隐私"""
+    employee_id: str      = Field(primary_key=True)
+    name:        str
+    phone_tail:  str      = Field(index=True)   # 手机尾 4 位
+    synced_at:   datetime = Field(default_factory=datetime.now)

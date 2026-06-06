@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db
-from routers import scan, pickup, unclaimed
+from routers import scan, pickup, unclaimed, employees
 
 app = FastAPI(title="Parcel Kiosk API")
 
@@ -15,6 +15,7 @@ app.add_middleware(
 app.include_router(scan.router)
 app.include_router(pickup.router)
 app.include_router(unclaimed.router)
+app.include_router(employees.router)
 
 
 @app.on_event("startup")
