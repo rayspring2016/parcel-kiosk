@@ -23,7 +23,6 @@ async def scan(req: ScanRequest, session: Session = Depends(get_session)):
     result  = parse_barcode(req.barcode)
     slot    = assign_slot(session, MAX_SLOTS)
     dt      = DingTalkClient(DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID)
-    printer = get_printer_service()
     now_str = datetime.now().strftime("%Y/%m/%d %H:%M")
 
     employee_id = None
@@ -40,7 +39,10 @@ async def scan(req: ScanRequest, session: Session = Depends(get_session)):
         session.refresh(pkg)
         pickup_url = f"{SERVER_BASE_URL}/pickup/confirm/{pkg.id}"
         await dt.send_pickup_notification(employee_id, slot, result.courier, pickup_url)
-        printer.print_label(slot=slot, courier=result.courier, arrived_at=now_str)
+        try:
+            get_printer_service().print_label(slot=slot, courier=result.courier, arrived_at=now_str)
+        except Exception as e:
+            import logging; logging.getLogger(__name__).warning("打印失败（可忽略）: %s", e)
         return {"matched": True, "slot": slot, "code": str(slot), "courier": result.courier}
     else:
         pkg = Package(
@@ -51,5 +53,8 @@ async def scan(req: ScanRequest, session: Session = Depends(get_session)):
         )
         session.add(pkg)
         session.commit()
-        printer.print_unclaimed_label(slot=slot, courier=result.courier, arrived_at=now_str)
+        try:
+            get_printer_service().print_unclaimed_label(slot=slot, courier=result.courier, arrived_at=now_str)
+        except Exception as e:
+            import logging; logging.getLogger(__name__).warning("打印失败（可忽略）: %s", e)
         return {"matched": False, "slot": slot, "code": f"待认领-{slot:02d}", "courier": result.courier}
