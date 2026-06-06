@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "pages/myPackages/index",
+    "pages/unclaimed/index"
+  ],
+  "window": {
+    "defaultTitle": "快递自助取件",
+    "titleBarColor": "#0f172a"
+  }
+}

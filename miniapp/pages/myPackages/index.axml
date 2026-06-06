@@ -1,0 +1,24 @@
+<view class="container">
+  <view a:if="{{loading}}" class="empty">加载中…</view>
+
+  <view a:elif="{{packages.length === 0}}" class="empty">
+    暂无待取包裹
+  </view>
+
+  <block a:else a:for="{{packages}}" key="{{item.code}}">
+    <view class="card">
+      <text class="meta">{{item.courier}}</text>
+      <text class="code">{{item.code}}</text>
+      <text class="meta">到件：{{item.arrived_at}}</text>
+
+      <view a:if="{{item.status === 'pending'}}">
+        <button class="btn" onTap="onPickup" data-code="{{item.code}}">
+          ✅ 我已取件
+        </button>
+      </view>
+      <view a:else>
+        <text class="status-picked">✓ 已取件</text>
+      </view>
+    </view>
+  </block>
+</view>
