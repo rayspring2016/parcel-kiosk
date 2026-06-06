@@ -17,18 +17,18 @@ class PrinterService:
         p.set(align="center", bold=False, height=1, width=1)
         p.cut()
 
-    def print_label(self, code: str, courier: str, arrived_at: str):
-        self._print_lines([courier, code, f"到件：{arrived_at}"])
+    def print_label(self, slot: int, courier: str, arrived_at: str):
+        """正常标签：格子号最大，快递公司次之"""
+        self._print_lines([f"{slot:02d} 号格", courier, f"到件：{arrived_at}"])
 
-    def print_unclaimed_label(self, code: str, courier: str, arrived_at: str):
-        self._print_lines(["【待认领】", courier, code, f"到件：{arrived_at}"])
+    def print_unclaimed_label(self, slot: int, courier: str, arrived_at: str):
+        self._print_lines(["【待认领】", f"{slot:02d} 号格", courier, f"到件：{arrived_at}"])
 
 
 _printer_instance: Optional[PrinterService] = None
 
 
 def get_printer_service() -> PrinterService:
-    """懒加载单例：USB 打印机不支持多连接，必须全程共用同一实例"""
     global _printer_instance
     if _printer_instance is None:
         _printer_instance = PrinterService()

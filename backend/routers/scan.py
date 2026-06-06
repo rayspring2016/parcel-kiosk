@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from pydantic import BaseModel
 from datetime import datetime
 from database import get_session
 from models import Package, PackageStatus
 from services.barcode import parse_barcode
-from services.code_gen import generate_code, next_seq
+from services.code_gen import assign_slot
 from services.dingtalk import DingTalkClient
 from services.printer import get_printer_service
-from config import DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID, SERVER_BASE_URL
+from config import (DINGTALK_APP_KEY, DINGTALK_APP_SECRET,
+                    DINGTALK_AGENT_ID, SERVER_BASE_URL, MAX_SLOTS)
 
 router = APIRouter()
 
@@ -19,9 +20,9 @@ class ScanRequest(BaseModel):
 
 @router.post("/scan")
 async def scan(req: ScanRequest, session: Session = Depends(get_session)):
-    result = parse_barcode(req.barcode)
-    seq = next_seq(session)
-    dt = DingTalkClient(DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID)
+    result  = parse_barcode(req.barcode)
+    slot    = assign_slot(session, MAX_SLOTS)
+    dt      = DingTalkClient(DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID)
     printer = get_printer_service()
     now_str = datetime.now().strftime("%Y/%m/%d %H:%M")
 
@@ -30,22 +31,25 @@ async def scan(req: ScanRequest, session: Session = Depends(get_session)):
         employee_id = await dt.get_user_id_by_phone(result.phone)
 
     if employee_id:
-        code = generate_code(seq)
-        session.add(Package(code=code, courier=result.courier, employee_id=employee_id, daily_seq=seq))
+        pkg = Package(
+            slot=slot, code=str(slot),
+            courier=result.courier, employee_id=employee_id
+        )
+        session.add(pkg)
         session.commit()
-        pickup_url = f"{SERVER_BASE_URL}/pickup/{code}/confirm"
-        await dt.send_pickup_notification(employee_id, code, result.courier, pickup_url)
-        printer.print_label(code=code, courier=result.courier, arrived_at=now_str)
-        return {"matched": True, "code": code, "courier": result.courier}
+        session.refresh(pkg)
+        pickup_url = f"{SERVER_BASE_URL}/pickup/confirm/{pkg.id}"
+        await dt.send_pickup_notification(employee_id, slot, result.courier, pickup_url)
+        printer.print_label(slot=slot, courier=result.courier, arrived_at=now_str)
+        return {"matched": True, "slot": slot, "code": str(slot), "courier": result.courier}
     else:
-        code = f"待认领-{generate_code(seq)}"
-        session.add(Package(
-            code=code,
+        pkg = Package(
+            slot=slot, code=f"待认领-{slot:02d}",
             courier=result.courier,
             status=PackageStatus.unclaimed,
-            daily_seq=seq,
             phone_tail=result.phone[-4:] if result.phone else None,
-        ))
+        )
+        session.add(pkg)
         session.commit()
-        printer.print_unclaimed_label(code=code, courier=result.courier, arrived_at=now_str)
-        return {"matched": False, "code": code, "courier": result.courier}
+        printer.print_unclaimed_label(slot=slot, courier=result.courier, arrived_at=now_str)
+        return {"matched": False, "slot": slot, "code": f"待认领-{slot:02d}", "courier": result.courier}

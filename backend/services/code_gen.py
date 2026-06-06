@@ -1,26 +1,29 @@
 import threading
-from datetime import date, datetime
-from sqlmodel import Session, select, func
-from models import Package
+from sqlmodel import Session, select
+from models import Package, PackageStatus
 
-_seq_lock = threading.Lock()  # 单进程部署下防止并发 next_seq 产生相同序号
-
-
-def generate_code(seq: int) -> str:
-    today = date.today()
-    return f"{today.strftime('%m%d')}-{seq:03d}"
+_slot_lock = threading.Lock()   # 单进程下防止并发分配同一格子
 
 
-def next_seq(session: Session) -> int:
+def assign_slot(session: Session, max_slots: int) -> int:
     """
-    原实现用 COUNT(*)+1 存在竞态：两个并发请求同时读到 count=5，都返回 6。
-    改为 SELECT COALESCE(MAX(daily_seq), 0)+1，配合模块级锁确保原子性。
-    COALESCE 处理今日第一单时 MAX 返回 NULL 的边界情况。
+    返回当前最小空闲格子编号（1 ~ max_slots）。
+    "空闲"定义：没有状态为 pending / unclaimed 的包裹占用该格子。
+    取走即空、可立刻复用。
+
+    使用 threading.Lock 而非数据库事务锁：
+    - 项目为单进程部署（uvicorn --workers 1），Lock 足够防竞态
+    - 多进程/多机场景需改为 SELECT FOR UPDATE 或 Redis 分布式锁
     """
-    with _seq_lock:
-        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        result = session.exec(
-            select(func.coalesce(func.max(Package.daily_seq), 0))
-            .where(Package.arrived_at >= today_start)
-        ).one()
-        return result + 1
+    with _slot_lock:
+        occupied = set(
+            session.exec(
+                select(Package.slot).where(
+                    Package.status.in_([PackageStatus.pending, PackageStatus.unclaimed])
+                )
+            ).all()
+        )
+        for slot in range(1, max_slots + 1):
+            if slot not in occupied:
+                return slot
+        raise RuntimeError(f"所有 {max_slots} 个格子均已占满，请先处理待取包裹")

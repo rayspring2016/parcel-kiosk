@@ -8,7 +8,6 @@ from services.dingtalk import DingTalkClient
 from config import DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID, SERVER_BASE_URL
 
 logger = logging.getLogger(__name__)
-
 scheduler = AsyncIOScheduler()
 
 
@@ -21,19 +20,17 @@ async def send_reminders():
             .where(Package.arrived_at <= cutoff)
             .where(Package.employee_id.isnot(None))
         ).all()
-        dt = DingTalkClient(DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID)
+        dt   = DingTalkClient(DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID)
         sent = 0
         for pkg in pkgs:
-            pickup_url = f"{SERVER_BASE_URL}/pickup/{pkg.code}/confirm"
+            pickup_url = f"{SERVER_BASE_URL}/pickup/confirm/{pkg.id}"
             try:
-                ok = await dt.send_reminder(pkg.employee_id, pkg.code, pickup_url)
+                ok = await dt.send_reminder(pkg.employee_id, pkg.slot, pickup_url)
                 if ok:
                     sent += 1
-                else:
-                    logger.warning("Reminder send failed for pkg %s", pkg.code)
             except Exception as e:
-                logger.error("Reminder error for pkg %s: %s", pkg.code, e)
-        logger.info("Reminders sent: %d / %d pending", sent, len(pkgs))
+                logger.error("Reminder error pkg_id=%s: %s", pkg.id, e)
+        logger.info("Reminders sent: %d / %d", sent, len(pkgs))
 
 
 async def expire_old_packages():
@@ -52,7 +49,7 @@ async def expire_old_packages():
 
 
 def start_scheduler():
-    scheduler.add_job(send_reminders, "interval", hours=1, id="reminders")
-    scheduler.add_job(expire_old_packages, "cron", hour=2, minute=0, id="expire")
+    scheduler.add_job(send_reminders,     "interval", hours=1,  id="reminders")
+    scheduler.add_job(expire_old_packages, "cron",    hour=2, minute=0, id="expire")
     scheduler.start()
     logger.info("Scheduler started with %d jobs", len(scheduler.get_jobs()))

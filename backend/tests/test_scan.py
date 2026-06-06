@@ -37,10 +37,14 @@ def test_scan_matched(client):
         mock_dt.send_pickup_notification.return_value = True
         mock_dt_cls.return_value = mock_dt
         mock_printer.return_value = MagicMock()
+
         resp = client.post("/scan", json={"barcode": "SF|13800138000|张三|北京"})
+
     assert resp.status_code == 200
-    assert resp.json()["matched"] is True
-    assert resp.json()["code"].startswith("06")
+    data = resp.json()
+    assert data["matched"] is True
+    assert data["slot"] == 1          # 第一个包裹应分配格子 1
+    assert data["code"] == "1"
 
 
 def test_scan_unmatched(client):
@@ -54,7 +58,11 @@ def test_scan_unmatched(client):
         mock_dt.get_user_id_by_phone.return_value = None
         mock_dt_cls.return_value = mock_dt
         mock_printer.return_value = MagicMock()
+
         resp = client.post("/scan", json={"barcode": "SOME_BARCODE"})
+
     assert resp.status_code == 200
-    assert resp.json()["matched"] is False
-    assert "待认领" in resp.json()["code"]
+    data = resp.json()
+    assert data["matched"] is False
+    assert data["slot"] == 1
+    assert "待认领" in data["code"]
