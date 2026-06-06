@@ -1,4 +1,5 @@
 {
+  "miniAppId": "500000000006758640",
   "pages": [
     "pages/myPackages/index",
     "pages/unclaimed/index"
