@@ -166,16 +166,13 @@ async function submitAssign(sur = null) {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const data = await resp.json()
 
-    if (data.status === "ambiguous") {
-      surname.value = ""; state.value = "surname_input"
-      nextTick(() => surnameInput.value?.focus())
-    } else if (data.status === "matched") {
+    if (data.status === "matched") {
       state.value = "success"
       scheduleReset()
     } else {
-      unclaimedMsg.value = data.status === "unmatched" && !sur
-        ? "未匹配到员工，已推送候选人确认"
-        : "无法确认收件人，放待认领区，已通知候选员工"
+      unclaimedMsg.value = data.status === "ambiguous_notified"
+        ? `已通知 ${data.count} 位候选员工，请放到对应位置`
+        : "未匹配到员工，包裹放待认领区"
       state.value = "unclaimed"
       scheduleReset()
     }

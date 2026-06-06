@@ -22,12 +22,11 @@ class ScanRequest(BaseModel):
 
 class AssignRequest(BaseModel):
     phone_tail: str
-    surname:    Optional[str] = None
 
 
 @router.post("/scan")
 async def scan(req: ScanRequest, session: Session = Depends(get_session)):
-    """Step 1: 扫码 → 立即分配编号、入库、打印标签，与员工匹配无关"""
+    """扫码 → 立即分配编号、入库、打印标签"""
     result = parse_barcode(req.barcode)
 
     shelf, layer, seq = assign_location(session, MAX_SHELVES, MAX_LAYERS)
@@ -37,7 +36,6 @@ async def scan(req: ScanRequest, session: Session = Depends(get_session)):
     pkg = Package(
         shelf=shelf, layer=layer, seq=seq, code=code,
         courier=result.courier, status=PackageStatus.unclaimed,
-        phone_tail=None,
     )
     session.add(pkg); session.commit(); session.refresh(pkg)
 
@@ -52,7 +50,7 @@ async def scan(req: ScanRequest, session: Session = Depends(get_session)):
         "code":    code,
         "pkg_id":  pkg.id,
         "courier": result.courier,
-        "status":  "need_phone",   # 前端继续提示输入尾号
+        "status":  "need_phone",
     }
 
 
@@ -60,7 +58,7 @@ async def scan(req: ScanRequest, session: Session = Depends(get_session)):
 async def assign_employee(
     pkg_id: int, req: AssignRequest, session: Session = Depends(get_session)
 ):
-    """Step 2: 输入手机尾号（+可选姓氏）→ 匹配员工 → 推送通知"""
+    """输入手机尾号 → 匹配员工并推送（重复时带位置推送给所有候选人）"""
     pkg = session.get(Package, pkg_id)
     if not pkg:
         raise HTTPException(status_code=404, detail="包裹不存在")
@@ -69,17 +67,10 @@ async def assign_employee(
         select(Employee).where(Employee.phone_tail == req.phone_tail)
     ).all()
 
-    if req.surname:
-        candidates = [e for e in candidates if e.name.startswith(req.surname)]
-
-    # 仍有多人且未提供姓氏 → 要求再输入姓氏
-    if len(candidates) > 1 and not req.surname:
-        return {"status": "ambiguous", "count": len(candidates)}
-
     dt = DingTalkClient(DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID)
 
     if len(candidates) == 1:
-        # 唯一匹配：更新包裹归属，推送取件通知
+        # 唯一匹配：直接推送取件通知
         emp = candidates[0]
         pkg.employee_id = emp.employee_id
         pkg.status      = PackageStatus.pending
@@ -95,24 +86,29 @@ async def assign_employee(
 
         return {"status": "matched", "employee_name": emp.name}
 
-    else:
-        # 0 人匹配 or 仍重复 → 待认领 + 群发候选人
+    elif len(candidates) > 1:
+        # 重复匹配：带货架位置推送给所有候选人，让员工自己认领
         pkg.phone_tail = req.phone_tail
         session.add(pkg); session.commit()
 
-        if candidates:
-            review_urls = {
-                e.employee_id: f"{SERVER_BASE_URL}/unclaimed/{pkg.id}/review?employee_id={e.employee_id}"
-                for e in candidates
-            }
-            try:
-                await dt.send_ambiguous_notification(
-                    employee_review_urls=review_urls,
-                    courier=pkg.courier,
-                    tracking_tail=req.phone_tail,
-                    code=pkg.code,
-                )
-            except Exception as e:
-                import logging; logging.getLogger(__name__).warning("推送失败: %s", e)
+        review_urls = {
+            e.employee_id: f"{SERVER_BASE_URL}/unclaimed/{pkg.id}/review?employee_id={e.employee_id}"
+            for e in candidates
+        }
+        try:
+            await dt.send_ambiguous_notification(
+                employee_review_urls=review_urls,
+                courier=pkg.courier,
+                tracking_tail=req.phone_tail,
+                code=pkg.code,
+            )
+        except Exception as e:
+            import logging; logging.getLogger(__name__).warning("推送失败: %s", e)
 
+        return {"status": "ambiguous_notified", "count": len(candidates)}
+
+    else:
+        # 无匹配：保持待认领
+        pkg.phone_tail = req.phone_tail
+        session.add(pkg); session.commit()
         return {"status": "unmatched"}
