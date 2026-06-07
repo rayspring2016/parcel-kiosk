@@ -4,6 +4,7 @@ backend/**/__pycache__/
 backend/*.pyc
 backend/parcel.db
 backend/.env
+.env
 *.egg-info/
 .DS_Store
 backend/parcel.db-shm
