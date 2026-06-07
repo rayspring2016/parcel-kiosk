@@ -11,6 +11,7 @@ DB_PATH             = os.getenv("DB_PATH", "parcel.db")
 MAX_SHELVES         = int(os.getenv("MAX_SHELVES", "2"))   # 货架数量
 MAX_LAYERS          = int(os.getenv("MAX_LAYERS", "4"))    # 每个货架的层数
 PRINTER_NAME        = os.getenv("PRINTER_NAME", "HUAWEI_PixLab_V1_0409")  # CUPS 打印机名
+PRINTER_HOST        = os.getenv("PRINTER_HOST", "localhost")               # 打印机 CUPS 主机（NAS 填打印机 IP）
 
 # 快递公司 → 货架层映射，格式：顺丰:1-1,中通:1-2,圆通:1-3
 # 键名需与 barcode.py COURIER_MAP 中文名一致；未配置则退回负载均衡

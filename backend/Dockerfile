@@ -1,15 +1,18 @@
 FROM python:3.12-slim
 
+# CUPS 客户端（提供 lp 命令）+ 中文字体（fpdf2 PDF 渲染用）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cups-client \
+    fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# 安装依赖
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制后端代码
 COPY . .
 
-# 创建数据库目录
 RUN mkdir -p /data
 
 EXPOSE 8000
