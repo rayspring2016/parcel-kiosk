@@ -41,3 +41,15 @@ async def sync_employees(session: Session = Depends(get_session)):
 def employee_count(session: Session = Depends(get_session)):
     count = len(session.exec(select(Employee)).all())
     return {"count": count}
+
+
+@router.get("/employees/by-tail/{tail}")
+def employee_by_tail(tail: str, session: Session = Depends(get_session)):
+    """工作台免登：手机尾号查员工（精确匹配唯一时才返回）"""
+    matches = session.exec(select(Employee).where(Employee.phone_tail == tail)).all()
+    if len(matches) == 1:
+        return {"employee_id": matches[0].employee_id, "name": matches[0].name}
+    elif len(matches) == 0:
+        return {"error": "未找到该手机尾号对应员工，请确认后重试"}
+    else:
+        return {"error": "该尾号对应多名员工，请联系管理员"}

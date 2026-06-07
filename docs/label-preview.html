@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>标签系统 · 设计预览</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:    #0f172a;
+  --ink-2:  #334155;
+  --ink-3:  #64748b;
+  --ink-4:  #94a3b8;
+  --rule:   #e2e8f0;
+  --bg:     #f8fafc;
+  --white:  #ffffff;
+  --blue:   #1d4ed8;
+  --blue-d: #1e3a8a;
+  --blue-l: #dbeafe;
+  --red:    #b91c1c;
+}
+
+body {
+  background: var(--bg);
+  font-family: 'Outfit', -apple-system, sans-serif;
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 64px 48px 80px;
+}
+
+.page-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 12px;
+}
+
+.page-title {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.page-title span { color: var(--blue); }
+
+.page-sub {
+  font-size: 14px;
+  color: var(--ink-3);
+  margin-bottom: 56px;
+  line-height: 1.6;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 64px;
+  align-items: start;
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.toggle {
+  display: inline-flex;
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 28px;
+}
+.toggle-btn {
+  padding: 6px 18px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--ink-4);
+  font-family: inherit;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 0.02em;
+}
+.toggle-btn.active { background: var(--ink); color: var(--white); }
+
+/* ═══ PACKAGE LABEL ════════════════════════════════ */
+.pkg-label {
+  background: var(--white);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(15,23,42,0.07),
+    0 4px 6px -2px rgba(15,23,42,0.05),
+    0 20px 48px -12px rgba(15,23,42,0.14);
+  max-width: 360px;
+  transition: transform 0.45s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.45s cubic-bezier(0.16,1,0.3,1);
+}
+.pkg-label:hover {
+  transform: translateY(-6px) rotateX(1deg);
+  box-shadow: 0 0 0 1px rgba(15,23,42,0.08),
+              0 36px 64px -16px rgba(15,23,42,0.2);
+}
+
+.pkg-meta {
+  padding: 14px 20px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--rule);
+}
+.pkg-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.pkg-date-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-4);
+  margin-top: 4px;
+}
+.pkg-courier-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--blue);
+  background: var(--blue-l);
+  border-radius: 4px;
+  padding: 4px 10px;
+}
+.pkg-label.unclaimed .pkg-courier-badge { background: #fee2e2; color: var(--red); }
+
+.pkg-unclaimed-row {
+  display: none;
+  background: var(--red);
+  padding: 5px 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--white);
+  text-transform: uppercase;
+}
+.pkg-label.unclaimed .pkg-unclaimed-row { display: block; }
+
+.pkg-code-zone {
+  padding: 20px 20px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.pkg-code-zone::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -80%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  animation: shimmer 4s ease-in-out infinite;
+}
+@keyframes shimmer { 0%{ left:-80%; } 55%{ left:130%; } 100%{ left:130%; } }
+
+.pkg-code-inner {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  line-height: 1;
+}
+.pkg-shelf-prefix {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink-4);
+}
+.pkg-label.unclaimed .pkg-shelf-prefix { color: #fca5a5; }
+
+.pkg-seq {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 86px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.06em;
+  line-height: 0.88;
+}
+.pkg-label.unclaimed .pkg-seq { color: var(--red); }
+
+.pkg-divider { height: 1px; background: var(--rule); margin: 0 20px; }
+
+.pkg-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--rule);
+}
+.pkg-field {
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pkg-field + .pkg-field { border-left: 1px solid var(--rule); }
+.pkg-field-key {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.pkg-field-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.pkg-barcode {
+  padding: 14px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.barcode-svg { width: 100%; height: 40px; }
+.barcode-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+/* ═══ SHELF LABELS ══════════════════════════════════ */
+.shelf-section { display: flex; flex-direction: column; gap: 32px; }
+.shelf-group { display: flex; flex-direction: column; gap: 10px; }
+
+.shelf-strip {
+  background: var(--blue);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  height: 76px;
+  box-shadow: 0 0 0 1px rgba(30,58,138,0.4),
+              0 8px 24px -6px rgba(29,78,216,0.35);
+  transition: transform 0.35s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.35s cubic-bezier(0.16,1,0.3,1);
+}
+.shelf-strip:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 1px rgba(30,58,138,0.5),
+              0 16px 36px -8px rgba(29,78,216,0.45);
+}
+
+.shelf-inst {
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  min-width: 170px;
+}
+.shelf-inst-line {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.4;
+}
+
+.shelf-bc {
+  padding: 10px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  flex: 1;
+}
+.shelf-bc-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 0.06em;
+}
+
+.shelf-code-panel {
+  padding: 10px 18px 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 200px;
+}
+.shelf-num-block { display: flex; flex-direction: column; gap: 1px; }
+.shelf-num-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.shelf-num-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.shelf-num-pattern {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+}
+
+.shelf-arrow {
+  width: 28px; height: 28px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.shelf-arrow svg {
+  width: 14px; height: 14px;
+  fill: none;
+  stroke: rgba(255,255,255,0.85);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shelf-strip.c2 { background: #0f766e; }
+.shelf-strip.c2:hover { box-shadow: 0 0 0 1px rgba(15,118,110,.5), 0 16px 36px -8px rgba(15,118,110,.4); }
+.shelf-strip.c3 { background: #7c3aed; }
+.shelf-strip.c3:hover { box-shadow: 0 0 0 1px rgba(124,58,237,.5), 0 16px 36px -8px rgba(124,58,237,.4); }
+.shelf-strip.c4 { background: #b45309; }
+.shelf-strip.c4:hover { box-shadow: 0 0 0 1px rgba(180,83,9,.5), 0 16px 36px -8px rgba(180,83,9,.4); }
+
+.note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--ink-4);
+  line-height: 1.6;
+}
+
+.specs {
+  border-top: 1px solid var(--rule);
+  padding-top: 28px;
+}
+.specs-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 14px;
+}
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.spec-cell { background: var(--white); padding: 14px 18px; }
+.spec-cell-key { font-size: 10px; color: var(--ink-4); margin-bottom: 4px; }
+.spec-cell-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-eyebrow">标签系统 · 设计预览 v2</div>
+  <h1 class="page-title">包裹贴纸 <span>&amp;</span> 货架标签</h1>
+  <p class="page-sub">参照菜鸟驿站标签体系设计。包裹贴纸行政扫码后打印贴附，货架标签一次性安装永久使用。</p>
+
+  <div class="cols">
+
+    <!-- LEFT: PACKAGE LABEL -->
+    <div>
+      <div class="section-label">包裹贴纸标签</div>
+      <div class="toggle">
+        <button class="toggle-btn active" onclick="setVariant('normal',this)">普通包裹</button>
+        <button class="toggle-btn" onclick="setVariant('unclaimed',this)">待认领</button>
+      </div>
+
+      <div class="pkg-label" id="pkgLabel">
+        <div class="pkg-meta">
+          <div>
+            <div class="pkg-date">06/07</div>
+            <div class="pkg-date-sub">14:32 到件</div>
+          </div>
+          <div class="pkg-courier-badge" id="courierBadge">顺丰速运</div>
+        </div>
+
+        <div class="pkg-unclaimed-row">待认领 · Unclaimed</div>
+
+        <div class="pkg-code-zone">
+          <div class="pkg-code-inner">
+            <span class="pkg-shelf-prefix">1-2-</span>
+            <span class="pkg-seq">0017</span>
+          </div>
+        </div>
+
+        <div class="pkg-divider"></div>
+
+        <div class="pkg-info">
+          <div class="pkg-field">
+            <div class="pkg-field-key">货架 / 层</div>
+            <div class="pkg-field-val">1 架 · 2 层</div>
+          </div>
+          <div class="pkg-field">
+            <div class="pkg-field-key" id="trackingLabel">快递单号</div>
+            <div class="pkg-field-val" id="trackingVal">SF···3022</div>
+          </div>
+        </div>
+
+        <div class="pkg-barcode">
+          <svg class="barcode-svg" id="barcodeSvg" viewBox="0 0 320 40" preserveAspectRatio="none"></svg>
+          <div class="barcode-num" id="barcodeNum">SF1234567890·····3022</div>
+        </div>
+      </div>
+
+      <p class="note" style="margin-top:16px;">
+        待认领时钉钉通知隐藏完整单号，仅展示尾4位供员工核对身份。
+      </p>
+    </div>
+
+    <!-- RIGHT: SHELF LABELS -->
+    <div class="shelf-section">
+      <div>
+        <div class="section-label">货架永久标签（示例：1号货架，4层）</div>
+
+        <div class="shelf-group">
+
+          <div class="shelf-strip">
+            <div class="shelf-inst">
+              <div class="shelf-inst-line">请核对姓名手机号</div>
+              <div class="shelf-inst-line">取件后至前台签收</div>
+            </div>
+            <div class="shelf-bc">
+              <svg viewBox="0 0 120 32" width="120" height="32" id="bc1"></svg>
+              <div class="shelf-bc-num">1-1 · 顺丰专区</div>
+            </div>
+            <div class="shelf-code-panel">
+              <div class="shelf-num-block">
+                <div class="shelf-num-label">顺丰速运</div>
+                <div class="shelf-num-code">1 - 1</div>
+                <div class="shelf-num-pattern">1-1-XXXX</div>
+              </div>
+              <div class="shelf-arrow"><svg viewBox="0 0 16 16"><path d="M8 3l5 5-5 5M13 8H3"/></svg></div>
+            </div>
+          </div>
+
+          <div class="shelf-strip c2">
+            <div class="shelf-inst">
+              <div class="shelf-inst-line">请核对姓名手机号</div>
+              <div class="shelf-inst-line">取件后至前台签收</div>
+            </div>
+            <div class="shelf-bc">
+              <svg viewBox="0 0 120 32" width="120" height="32" id="bc2"></svg>
+              <div class="shelf-bc-num">1-2 · 中通专区</div>
+            </div>
+            <div class="shelf-code-panel">
+              <div class="shelf-num-block">
+                <div class="shelf-num-label">中通快递</div>
+                <div class="shelf-num-code">1 - 2</div>
+                <div class="shelf-num-pattern">1-2-XXXX</div>
+              </div>
+              <div class="shelf-arrow"><svg viewBox="0 0 16 16"><path d="M8 3l5 5-5 5M13 8H3"/></svg></div>
+            </div>
+          </div>
+
+          <div class="shelf-strip c3">
+            <div class="shelf-inst">
+              <div class="shelf-inst-line">请核对姓名手机号</div>
+              <div class="shelf-inst-line">取件后至前台签收</div>
+            </div>
+            <div class="shelf-bc">
+              <svg viewBox="0 0 120 32" width="120" height="32" id="bc3"></svg>
+              <div class="shelf-bc-num">1-3 · 圆通专区</div>
+            </div>
+            <div class="shelf-code-panel">
+              <div class="shelf-num-block">
+                <div class="shelf-num-label">圆通速递</div>
+                <div class="shelf-num-code">1 - 3</div>
+                <div class="shelf-num-pattern">1-3-XXXX</div>
+              </div>
+              <div class="shelf-arrow"><svg viewBox="0 0 16 16"><path d="M8 3l5 5-5 5M13 8H3"/></svg></div>
+            </div>
+          </div>
+
+          <div class="shelf-strip c4">
+            <div class="shelf-inst">
+              <div class="shelf-inst-line">请核对姓名手机号</div>
+              <div class="shelf-inst-line">取件后至前台签收</div>
+            </div>
+            <div class="shelf-bc">
+              <svg viewBox="0 0 120 32" width="120" height="32" id="bc4"></svg>
+              <div class="shelf-bc-num">1-4 · 申通专区</div>
+            </div>
+            <div class="shelf-code-panel">
+              <div class="shelf-num-block">
+                <div class="shelf-num-label">申通快递</div>
+                <div class="shelf-num-code">1 - 4</div>
+                <div class="shelf-num-pattern">1-4-XXXX</div>
+              </div>
+              <div class="shelf-arrow"><svg viewBox="0 0 16 16"><path d="M8 3l5 5-5 5M13 8H3"/></svg></div>
+            </div>
+          </div>
+
+        </div>
+
+        <p class="note">
+          每层一张永久标签，颜色区分快递公司。可覆膜打印或定制亚克力标牌，安装在货架层边沿。
+        </p>
+      </div>
+
+      <div class="specs">
+        <div class="specs-title">规格说明</div>
+        <div class="specs-grid">
+          <div class="spec-cell">
+            <div class="spec-cell-key">包裹贴纸尺寸</div>
+            <div class="spec-cell-val">150 × 80 mm</div>
+          </div>
+          <div class="spec-cell">
+            <div class="spec-cell-key">编号格式</div>
+            <div class="spec-cell-val">1-2-0017</div>
+          </div>
+          <div class="spec-cell">
+            <div class="spec-cell-key">货架标签尺寸</div>
+            <div class="spec-cell-val">400 × 76 mm</div>
+          </div>
+          <div class="spec-cell">
+            <div class="spec-cell-key">货架标签材质</div>
+            <div class="spec-cell-val">覆膜 / 亚克力</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function makeBars(seed, count, el, fg, h) {
+  let s = seed;
+  const rng = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  let x = 4; const bars = [];
+  for (let i = 0; i < count; i++) {
+    const w = rng() > 0.65 ? (rng() > 0.5 ? 3 : 2) : 1;
+    bars.push({ x, w });
+    x += w + (rng() > 0.5 ? 2 : 1);
+    if (x > 316) break;
+  }
+  el.setAttribute('viewBox', `0 0 320 ${h}`);
+  el.innerHTML = bars.map(b => `<rect x="${b.x}" y="0" width="${b.w}" height="${h}" fill="${fg}" rx=".3"/>`).join('');
+}
+
+function makeShelfBars(seed, el) {
+  let s = seed;
+  const rng = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  let x = 4; const bars = [];
+  while (x < 116) {
+    const w = rng() > 0.65 ? (rng() > 0.5 ? 3 : 2) : 1;
+    bars.push({ x, w });
+    x += w + (rng() > 0.5 ? 2 : 1);
+  }
+  el.innerHTML = bars.map(b =>
+    `<rect x="${b.x}" y="2" width="${b.w}" height="28" fill="rgba(255,255,255,0.85)" rx=".3"/>`
+  ).join('');
+}
+
+makeBars(42819, 90, document.getElementById('barcodeSvg'), '#1a1a2e', 40);
+makeShelfBars(1001, document.getElementById('bc1'));
+makeShelfBars(2002, document.getElementById('bc2'));
+makeShelfBars(3003, document.getElementById('bc3'));
+makeShelfBars(4004, document.getElementById('bc4'));
+
+function setVariant(v, btn) {
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const label = document.getElementById('pkgLabel');
+  const badge = document.getElementById('courierBadge');
+  const tLabel = document.getElementById('trackingLabel');
+  const tVal = document.getElementById('trackingVal');
+  const bcNum = document.getElementById('barcodeNum');
+  if (v === 'unclaimed') {
+    label.classList.add('unclaimed');
+    badge.textContent = '待认领';
+    tLabel.textContent = '尾号参考';
+    tVal.textContent = '····3960';
+    bcNum.textContent = '···· ···· ···· 3022';
+    makeBars(99, 40, document.getElementById('barcodeSvg'), '#e2e8f0', 40);
+  } else {
+    label.classList.remove('unclaimed');
+    badge.textContent = '顺丰速运';
+    tLabel.textContent = '快递单号';
+    tVal.textContent = 'SF···3022';
+    bcNum.textContent = 'SF1234567890·····3022';
+    makeBars(42819, 90, document.getElementById('barcodeSvg'), '#1a1a2e', 40);
+  }
+}
+</script>
+</body>
+</html>

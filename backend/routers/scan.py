@@ -11,7 +11,7 @@ from services.dingtalk import DingTalkClient
 from services.printer import get_printer_service
 from config import (DINGTALK_APP_KEY, DINGTALK_APP_SECRET,
                     DINGTALK_AGENT_ID, SERVER_BASE_URL,
-                    MAX_SHELVES, MAX_LAYERS)
+                    MAX_SHELVES, MAX_LAYERS, COURIER_LAYER_MAP)
 
 router = APIRouter()
 
@@ -29,7 +29,10 @@ async def scan(req: ScanRequest, session: Session = Depends(get_session)):
     """扫码 → 立即分配编号、入库、打印标签"""
     result = parse_barcode(req.barcode)
 
-    shelf, layer, seq = assign_location(session, MAX_SHELVES, MAX_LAYERS)
+    shelf, layer, seq = assign_location(
+        session, MAX_SHELVES, MAX_LAYERS,
+        courier=result.courier, courier_layer_map=COURIER_LAYER_MAP,
+    )
     code    = f"{shelf}-{layer}-{seq:04d}"
     now_str = datetime.now().strftime("%Y/%m/%d %H:%M")
 
