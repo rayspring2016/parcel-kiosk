@@ -122,11 +122,27 @@
   }
 
   async function doClaim(pkgId) {
-    const q = document.getElementById('q').value.trim();
-    if (q.length !== 4 || !/^\d{4}$/.test(q)) {
-      document.getElementById('err').textContent = '请在输入框中输入手机尾号来认领';
+    // 弹窗让用户输入手机尾号验证身份
+    const tail = prompt('请输入你的手机尾号（4位）来认领包裹：', '');
+    if (!tail || tail.length !== 4 || !/^\d{4}$/.test(tail)) {
+      document.getElementById('err').textContent = '需要输入4位数字手机尾号才能认领';
       return;
     }
+    if (!confirm('确认认领这个包裹？')) return;
+    try {
+      const res = await fetch('/api/claim/' + pkgId + '?phone_tail=' + tail, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('err').textContent = '';
+        document.getElementById('result').innerHTML = '<div class=\"claim-ok\">✅ 认领成功！包裹 ' + data.code + ' 已归入你名下</div>';
+        setTimeout(doSearch, 2000);
+      } else {
+        document.getElementById('err').textContent = '认领失败：' + (data.detail || '未知错误');
+      }
+    } catch (e) {
+      document.getElementById('err').textContent = '网络错误，请重试';
+    }
+  }
     if (!confirm('确认认领这个包裹？')) return;
     try {
       const res = await fetch('/api/claim/' + pkgId + '?phone_tail=' + q, { method: 'POST' });
