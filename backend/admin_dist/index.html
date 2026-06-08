@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>快递管理控制台</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+         background:#f0f2f5;display:grid;grid-template-columns:220px 1fr;min-height:100vh;color:#1a1a1a}
+
+    /* ── Sidebar ── */
+    .sidebar{background:#001529;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+    .sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+    .sidebar-logo h1{color:#fff;font-size:15px;font-weight:600;line-height:1.3}
+    .sidebar-logo p{color:rgba(255,255,255,.4);font-size:11px;margin-top:3px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:12px 20px;color:rgba(255,255,255,.6);
+              cursor:pointer;font-size:14px;transition:.15s;border-left:3px solid transparent}
+    .nav-item:hover{color:#fff;background:rgba(255,255,255,.04)}
+    .nav-item.active{color:#fff;background:rgba(22,119,255,.15);border-left-color:#1677ff}
+    .nav-icon{width:18px;height:18px;flex-shrink:0;opacity:.7}
+    .nav-item.active .nav-icon{opacity:1}
+
+    /* ── Main ── */
+    .main{padding:24px;overflow:auto}
+    .page-header{margin-bottom:20px}
+    .page-header h2{font-size:18px;font-weight:600;color:#1a1a1a}
+    .page-header p{font-size:13px;color:#888;margin-top:2px}
+
+    /* ── Stat Cards ── */
+    .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    .stat-card{background:#fff;border-radius:10px;padding:18px 20px;
+               box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px}
+    .stat-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;
+               justify-content:center;flex-shrink:0}
+    .stat-icon svg{width:22px;height:22px}
+    .si-blue{background:#e6f4ff}.si-green{background:#f6ffed}.si-orange{background:#fff7e6}
+    .si-red{background:#fff1f0}.si-purple{background:#f9f0ff}
+    .stat-info .value{font-size:26px;font-weight:700;line-height:1.2}
+    .stat-info .label{font-size:12px;color:#888;margin-top:2px}
+    .v-blue{color:#1677ff}.v-green{color:#52c41a}.v-orange{color:#fa8c16}
+    .v-red{color:#ff4d4f}.v-purple{color:#722ed1}
+
+    /* ── Pills ── */
+    .pills{display:flex;gap:4px;background:#f0f2f5;padding:3px;border-radius:8px;width:fit-content}
+    .pill{border:none;background:none;padding:5px 14px;border-radius:6px;font-size:13px;
+          cursor:pointer;color:#666;transition:.15s}
+    .pill.active{background:#fff;color:#1677ff;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+    /* ── Chart grid ── */
+    .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px}
+    .chart-card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .chart-card h3{font-size:14px;font-weight:600;color:#333;margin-bottom:14px}
+    .chart-wrap{position:relative}
+
+    /* 快递排行榜 */
+    .courier-layout{display:flex;gap:20px;align-items:center}
+    .courier-chart{flex:0 0 160px}
+    .courier-list{flex:1;list-style:none}
+    .courier-list li{display:flex;align-items:center;gap:8px;padding:5px 0;
+                     font-size:13px;border-bottom:1px solid #f5f5f5}
+    .courier-list li:last-child{border:none}
+    .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .courier-name{flex:1;color:#333}
+    .courier-count{font-weight:600;color:#1677ff;font-variant-numeric:tabular-nums}
+    .courier-pct{color:#aaa;font-size:12px;min-width:36px;text-align:right}
+
+    /* ── Toolbar ── */
+    .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .toolbar select{border:1px solid #d9d9d9;border-radius:7px;padding:7px 10px;font-size:13px;
+                    background:#fff;outline:none;color:#333}
+    .toolbar select:focus{border-color:#1677ff}
+
+    /* ── Table ── */
+    .table-card{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{background:#fafafa;padding:11px 14px;text-align:left;font-weight:600;
+       color:#666;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+    td{padding:11px 14px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+    tr:nth-child(even) td{background:#fafcff}
+    tr:hover td{background:#e6f4ff!important;transition:background .1s}
+    tr:last-child td{border-bottom:none}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;
+           font-size:12px;font-weight:500}
+    .b-pending{background:#fff7e6;color:#d46b08}
+    .b-unclaimed{background:#fff1f0;color:#cf1322}
+    .b-picked{background:#f6ffed;color:#389e0d}
+    .b-expired{background:#f5f5f5;color:#999}
+    .btn-sm{border:none;border-radius:6px;padding:4px 12px;font-size:12px;
+            cursor:pointer;font-weight:500;transition:.15s}
+    .btn-pickup{background:#52c41a;color:#fff}.btn-pickup:hover{background:#389e0d}
+
+    .empty{text-align:center;padding:48px;color:#bbb;font-size:14px}
+
+    /* ── Mobile ── */
+    @media(max-width:768px){
+      body{grid-template-columns:1fr}
+      .sidebar{position:static;height:auto;flex-direction:row;flex-wrap:wrap;padding:0}
+      .sidebar-logo{display:none}
+      .nav-item{border-left:none;border-bottom:3px solid transparent;padding:12px 16px}
+      .nav-item.active{border-bottom-color:#1677ff;border-left:none}
+      .stat-row{grid-template-columns:repeat(2,1fr)}
+      .stat-row .stat-card:last-child{grid-column:span 2}
+      .chart-grid,.chart-grid-3{grid-template-columns:1fr}
+      .courier-layout{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>快递管理控制台</h1>
+    <p>Parcel Kiosk Admin</p>
+  </div>
+  <div class="nav-item active" onclick="showTab('stats',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    数据报表
+  </div>
+  <div class="nav-item" onclick="showTab('packages',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+    </svg>
+    所有包裹
+  </div>
+  <div class="nav-item" onclick="showTab('unclaimed',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    待认领
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- 报表 Tab -->
+  <div id="tab-stats">
+    <div class="page-header">
+      <h2>数据报表</h2>
+      <p>快递入库、取件与员工收件分析</p>
+    </div>
+
+    <!-- 时间选择 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="pills" id="stats-pills">
+        <button class="pill active" onclick="setStatsDays(7,this)">近7天</button>
+        <button class="pill" onclick="setStatsDays(30,this)">近30天</button>
+        <button class="pill" onclick="setStatsDays(90,this)">近90天</button>
+      </div>
+    </div>
+
+    <!-- 统计卡 -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-icon si-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1677ff" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+        </div>
+        <div class="stat-info"><div class="value v-blue" id="s-total">-</div><div class="label">入库总量</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="stat-info"><div class="value v-green" id="s-picked">-</div><div class="label">已取件</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="stat-info"><div class="value v-orange" id="s-pending">-</div><div class="label">待取件</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="stat-info"><div class="value v-red" id="s-unclaimed">-</div><div class="label">待认领</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#722ed1" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+          </svg>
+        </div>
+        <div class="stat-info"><div class="value v-purple" id="s-avg">-</div><div class="label">平均取件时长</div></div>
+      </div>
+    </div>
+
+    <!-- 图表：每日趋势 + 周趋势 -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>每日入库趋势</h3>
+        <canvas id="chart-daily" height="90"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>历史周趋势（近90天）</h3>
+        <canvas id="chart-weekly" height="90"></canvas>
+      </div>
+    </div>
+
+    <!-- 图表：快递分布 + 员工排行 -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>快递公司分布</h3>
+        <div class="courier-layout">
+          <div class="courier-chart"><canvas id="chart-courier"></canvas></div>
+          <ul class="courier-list" id="courier-list"></ul>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>员工收件排行 Top 10</h3>
+        <canvas id="chart-employee" height="90"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 所有包裹 Tab -->
+  <div id="tab-packages" style="display:none">
+    <div class="page-header"><h2>所有包裹</h2><p>查看和管理所有快递记录</p></div>
+    <div class="toolbar">
+      <select id="pkg-status" onchange="loadPackages()">
+        <option value="">全部状态</option>
+        <option value="pending">待取件</option>
+        <option value="unclaimed">待认领</option>
+        <option value="picked_up">已取件</option>
+      </select>
+      <select id="pkg-days" onchange="loadPackages()">
+        <option value="7">近7天</option>
+        <option value="30" selected>近30天</option>
+        <option value="90">近90天</option>
+      </select>
+      <button class="btn-sm btn-pickup" style="background:#1677ff" onclick="loadPackages()">刷新</button>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead><tr><th>货架编号</th><th>快递公司</th><th>手机尾号</th><th>状态</th><th>到件时间</th><th>取件时间</th><th>操作</th></tr></thead>
+        <tbody id="pkg-tbody"><tr><td colspan="7" class="empty">加载中…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 待认领 Tab -->
+  <div id="tab-unclaimed" style="display:none">
+    <div class="page-header"><h2>待认领包裹</h2><p>未匹配到员工或手机尾号重复的包裹</p></div>
+    <div class="toolbar">
+      <button class="btn-sm btn-pickup" style="background:#1677ff;margin-left:auto" onclick="loadUnclaimed()">刷新</button>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead><tr><th>货架编号</th><th>快递公司</th><th>手机尾号</th><th>到件时间</th><th>操作</th></tr></thead>
+        <tbody id="unclaimed-tbody"><tr><td colspan="5" class="empty">加载中…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const COLORS=['#1677ff','#52c41a','#fa8c16','#f5222d','#722ed1','#13c2c2','#eb2f96','#faad14','#a0d911','#08979c'];
+const BADGE={
+  pending:  '<span class="badge b-pending">待取件</span>',
+  unclaimed:'<span class="badge b-unclaimed">待认领</span>',
+  picked_up:'<span class="badge b-picked">已取件</span>',
+  expired:  '<span class="badge b-expired">已过期</span>',
+};
+let charts={};
+let statsDays=7;
+
+function showTab(name,el){
+  ['stats','packages','unclaimed'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===name?'':'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  if(name==='stats')     loadStats();
+  if(name==='packages')  loadPackages();
+  if(name==='unclaimed') loadUnclaimed();
+}
+
+function setStatsDays(d,btn){
+  statsDays=d;
+  document.querySelectorAll('#stats-pills .pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadStats();
+}
+
+function destroyChart(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+async function loadStats(){
+  const [sd, td, ed] = await Promise.all([
+    fetch(`/admin/api/stats?days=${statsDays}`).then(r=>r.json()),
+    fetch('/admin/api/trend?days=90').then(r=>r.json()),
+    fetch(`/admin/api/employee-stats?days=${statsDays}`).then(r=>r.json()),
+  ]);
+
+  // 统计卡
+  document.getElementById('s-total').textContent    = sd.total;
+  document.getElementById('s-picked').textContent   = sd.picked_up;
+  document.getElementById('s-pending').textContent  = sd.pending;
+  document.getElementById('s-unclaimed').textContent = sd.unclaimed;
+  document.getElementById('s-avg').textContent      = sd.avg_hours ? sd.avg_hours+'h' : '-';
+
+  // 每日折线
+  const dl=Object.keys(sd.daily).sort(), dv=dl.map(k=>sd.daily[k]);
+  destroyChart('daily');
+  charts.daily=new Chart(document.getElementById('chart-daily'),{
+    type:'line',
+    data:{labels:dl,datasets:[{data:dv,borderColor:'#1677ff',
+      backgroundColor:'rgba(22,119,255,0.08)',fill:true,tension:0.4,pointRadius:3,pointHoverRadius:5}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+
+  // 历史周折线
+  const wl=Object.keys(td).sort(), wv=wl.map(k=>td[k]);
+  destroyChart('weekly');
+  charts.weekly=new Chart(document.getElementById('chart-weekly'),{
+    type:'line',
+    data:{labels:wl,datasets:[{data:wv,borderColor:'#722ed1',
+      backgroundColor:'rgba(114,46,209,0.07)',fill:true,tension:0.4,pointRadius:3}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+
+  // 快递分布甜甜圈
+  const cL=Object.keys(sd.by_courier), cV=cL.map(k=>sd.by_courier[k]);
+  const total=cV.reduce((a,b)=>a+b,0)||1;
+  destroyChart('courier');
+  charts.courier=new Chart(document.getElementById('chart-courier'),{
+    type:'doughnut',
+    data:{labels:cL,datasets:[{data:cV,backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},
+    options:{plugins:{legend:{display:false}},cutout:'68%'}
+  });
+  // 排行榜
+  const sorted=[...cL.map((n,i)=>({n,v:cV[i],c:COLORS[i]}))].sort((a,b)=>b.v-a.v);
+  document.getElementById('courier-list').innerHTML=sorted.map(x=>`
+    <li>
+      <span class="dot" style="background:${x.c}"></span>
+      <span class="courier-name">${x.n}</span>
+      <span class="courier-count">${x.v}</span>
+      <span class="courier-pct">${Math.round(x.v/total*100)}%</span>
+    </li>`).join('');
+
+  // 员工排行横向柱状图 Top10
+  const top10=ed.slice(0,10);
+  destroyChart('employee');
+  charts.employee=new Chart(document.getElementById('chart-employee'),{
+    type:'bar',
+    data:{
+      labels:top10.map(e=>e.name),
+      datasets:[{data:top10.map(e=>e.count),
+        backgroundColor:top10.map((_,i)=>COLORS[i%COLORS.length]+'cc'),
+        borderRadius:4,borderSkipped:false}]
+    },
+    options:{
+      indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{ticks:{font:{size:12}}}}
+    }
+  });
+}
+
+async function loadPackages(){
+  const status=document.getElementById('pkg-status').value;
+  const days=document.getElementById('pkg-days').value;
+  const pkgs=await fetch(`/admin/api/packages?status=${status}&days=${days}`).then(r=>r.json());
+  const tbody=document.getElementById('pkg-tbody');
+  if(!pkgs.length){tbody.innerHTML='<tr><td colspan="7" class="empty">暂无数据</td></tr>';return;}
+  tbody.innerHTML=pkgs.map(p=>`
+    <tr>
+      <td><strong style="color:#1677ff">${p.code}</strong></td>
+      <td>${p.courier}</td>
+      <td>${p.phone_tail||'-'}</td>
+      <td>${BADGE[p.status]||p.status}</td>
+      <td>${p.arrived_at}</td>
+      <td>${p.picked_at||'-'}</td>
+      <td>${p.status!=='picked_up'?`<button class="btn-sm btn-pickup" onclick="markPickup(${p.id})">标记取件</button>`:''}</td>
+    </tr>`).join('');
+}
+
+async function loadUnclaimed(){
+  const pkgs=await fetch('/admin/api/packages?status=unclaimed&days=90').then(r=>r.json());
+  const tbody=document.getElementById('unclaimed-tbody');
+  if(!pkgs.length){tbody.innerHTML='<tr><td colspan="5" class="empty">暂无待认领包裹</td></tr>';return;}
+  tbody.innerHTML=pkgs.map(p=>`
+    <tr>
+      <td><strong style="color:#1677ff">${p.code}</strong></td>
+      <td>${p.courier}</td>
+      <td>${p.phone_tail||'-'}</td>
+      <td>${p.arrived_at}</td>
+      <td><button class="btn-sm btn-pickup" onclick="markPickup(${p.id},true)">标记取件</button></td>
+    </tr>`).join('');
+}
+
+async function markPickup(id,isUnclaimed=false){
+  if(!confirm('确认标记为已取件？'))return;
+  const d=await fetch(`/admin/api/packages/${id}/pickup`,{method:'POST'}).then(r=>r.json());
+  if(d.ok) isUnclaimed?loadUnclaimed():loadPackages();
+}
+
+loadStats();
+</script>
+</body>
+</html>

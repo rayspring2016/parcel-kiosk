@@ -80,13 +80,34 @@ class DingTalkClient:
 
 
     async def _get_dept_user_ids(self, dept_id: int = 1) -> list:
-        """获取部门下所有 userid（分页）"""
+        """获取部门下所有 userid"""
         ids = []
         data = await self._request("POST", "/topapi/user/listid",
                                    json={"dept_id": dept_id})
         if data.get("errcode") == 0:
             ids.extend(data.get("result", {}).get("userid_list", []))
+        else:
+            import logging
+            logging.getLogger(__name__).warning(
+                "钉钉部门(%s)获取用户失败: %s", dept_id, data.get("errmsg", ""))
         return ids
+
+    async def _get_all_dept_ids(self) -> list[int]:
+        """获取所有部门 ID（含根部门 1 + 所有子部门）"""
+        dept_ids = [1]
+        # 先查直接子部门
+        data = await self._request("POST", "/topapi/v2/department/listsub",
+                                   json={"dept_id": 1})
+        if data.get("errcode") == 0:
+            for sub in data.get("result", []):
+                did = sub.get("dept_id")
+                if did and did != 1:
+                    dept_ids.append(did)
+        else:
+            import logging
+            logging.getLogger(__name__).warning(
+                "钉钉部门列表获取失败: %s", data.get("errmsg", ""))
+        return dept_ids
 
     async def _get_user_detail(self, user_id: str) -> dict:
         """获取用户详情（含手机号、姓名）"""
@@ -103,9 +124,17 @@ class DingTalkClient:
 
     async def sync_all_employees(self) -> list:
         """同步全部员工到本地缓存，返回 [{employee_id, name, phone_tail}]"""
-        user_ids = await self._get_dept_user_ids()
+        # 遍历所有部门（根+子部门），避免员工在子部门下查不到
+        dept_ids = await self._get_all_dept_ids()
+        all_ids: set[str] = set()
+        for did in dept_ids:
+            ids = await self._get_dept_user_ids(did)
+            all_ids.update(ids)
+        import logging
+        logging.getLogger(__name__).info(
+            "钉钉共找到 %d 个部门, %d 个用户", len(dept_ids), len(all_ids))
         result = []
-        for uid in user_ids:
+        for uid in all_ids:
             detail = await self._get_user_detail(uid)
             if detail.get("mobile"):
                 result.append({

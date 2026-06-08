@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>快递查询</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+           background: #f5f5f5; min-height: 100vh; }
+
+    .header { background: #1677ff; color: #fff; padding: 20px 16px 16px;
+              text-align: center; }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header p  { font-size: 13px; opacity: .8; margin-top: 4px; }
+
+    .search-box { background: #fff; margin: 12px; border-radius: 12px;
+                  padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .search-box label { font-size: 13px; color: #666; display: block; margin-bottom: 8px; }
+    .input-row { display: flex; gap: 8px; }
+    .input-row input { flex: 1; border: 1px solid #ddd; border-radius: 8px;
+                       padding: 10px 12px; font-size: 16px; outline: none;
+                       transition: border-color .2s; }
+    .input-row input:focus { border-color: #1677ff; }
+    .input-row button { background: #1677ff; color: #fff; border: none;
+                        border-radius: 8px; padding: 10px 20px; font-size: 15px;
+                        cursor: pointer; white-space: nowrap; }
+    .input-row button:active { background: #0958d9; }
+
+    .result-area { margin: 0 12px 20px; }
+
+    .empty { text-align: center; color: #999; padding: 40px 0; font-size: 14px; }
+
+    .pkg-card { background: #fff; border-radius: 12px; padding: 16px;
+                margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .pkg-code { font-size: 28px; font-weight: 700; color: #1677ff;
+                letter-spacing: 1px; margin-bottom: 8px; }
+    .pkg-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .tag { font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+    .tag-courier  { background: #e6f4ff; color: #1677ff; }
+    .tag-pending  { background: #fff7e6; color: #d46b08; }
+    .tag-unclaimed{ background: #fff1f0; color: #cf1322; }
+    .tag-picked   { background: #f6ffed; color: #389e0d; }
+    .pkg-time { font-size: 12px; color: #999; }
+
+    .error { color: #cf1322; font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>快递查询</h1>
+  <p>输入手机尾号或货架编号查询包裹</p>
+</div>
+
+<div class="search-box">
+  <label>手机尾号（4位）或货架编号（如 1-2-0017）</label>
+  <div class="input-row">
+    <input id="q" type="text" placeholder="如：3456 或 1-2-0017"
+           inputmode="text" autocomplete="off" />
+    <button onclick="doSearch()">查询</button>
+  </div>
+  <div id="err" class="error"></div>
+</div>
+
+<div class="result-area" id="result"></div>
+
+<script>
+  const input = document.getElementById('q');
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+  const STATUS_MAP = {
+    pending:   { label: '待取件', cls: 'tag-pending' },
+    unclaimed: { label: '待认领', cls: 'tag-unclaimed' },
+    picked_up: { label: '已取件', cls: 'tag-picked' },
+    expired:   { label: '已过期', cls: 'tag-picked' },
+  };
+
+  async function doSearch() {
+    const q = input.value.trim();
+    const errEl = document.getElementById('err');
+    const resultEl = document.getElementById('result');
+    errEl.textContent = '';
+    resultEl.innerHTML = '';
+
+    if (!q) { errEl.textContent = '请输入查询内容'; return; }
+
+    try {
+      const res = await fetch(`/api/query?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error('服务异常');
+      const data = await res.json();
+
+      if (!data.length) {
+        resultEl.innerHTML = '<div class="empty">未找到相关包裹</div>';
+        return;
+      }
+
+      resultEl.innerHTML = data.map(p => {
+        const s = STATUS_MAP[p.status] || { label: p.status, cls: '' };
+        return `
+          <div class="pkg-card">
+            <div class="pkg-code">${p.code}</div>
+            <div class="pkg-meta">
+              <span class="tag tag-courier">${p.courier}</span>
+              <span class="tag ${s.cls}">${s.label}</span>
+            </div>
+            <div class="pkg-time">到件时间：${p.arrived_at}</div>
+          </div>`;
+      }).join('');
+    } catch (e) {
+      errEl.textContent = '查询失败，请稍后重试';
+    }
+  }
+</script>
+</body>
+</html>

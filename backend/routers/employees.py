@@ -5,6 +5,9 @@ from models import Employee
 from services.dingtalk import DingTalkClient
 from config import DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -21,9 +24,15 @@ async def dingtalk_auth(code: str):
 
 @router.post("/employees/sync")
 async def sync_employees(session: Session = Depends(get_session)):
-    """从钉钉同步所有员工到本地缓存（管理员手动触发或定时任务调用）"""
+    """从钉钉同步所有员工到本地缓存"""
+    import traceback
     dt = DingTalkClient(DINGTALK_APP_KEY, DINGTALK_APP_SECRET, DINGTALK_AGENT_ID)
-    employees = await dt.sync_all_employees()
+    try:
+        employees = await dt.sync_all_employees()
+        logger.info("钉钉同步返回 %d 条员工数据", len(employees))
+    except Exception as e:
+        logger.error("钉钉同步异常: %s\n%s", e, traceback.format_exc())
+        return {"synced": 0, "error": str(e), "detail": traceback.format_exc()}
 
     session.exec(delete(Employee))
     for e in employees:
@@ -53,3 +62,33 @@ def employee_by_tail(tail: str, session: Session = Depends(get_session)):
         return {"error": "未找到该手机尾号对应员工，请确认后重试"}
     else:
         return {"error": "该尾号对应多名员工，请联系管理员"}
+
+
+@router.post("/employees/add")
+def add_employee(employee_id: str, name: str, phone_tail: str,
+                 session: Session = Depends(get_session)):
+    """手动添加员工（绕过钉钉同步，调试用）"""
+    if len(phone_tail) != 4 or not phone_tail.isdigit():
+        return {"error": "phone_tail 必须是 4 位数字"}
+    existing = session.get(Employee, employee_id)
+    if existing:
+        return {"error": f"员工 {employee_id} 已存在"}
+    emp = Employee(
+        employee_id=employee_id,
+        name=name,
+        phone_tail=phone_tail,
+        synced_at=datetime.now(),
+    )
+    session.add(emp)
+    session.commit()
+    return {"ok": True, "employee_id": employee_id, "name": name}
+
+
+@router.get("/employees/list")
+def list_employees(session: Session = Depends(get_session)):
+    """查看所有已同步的员工"""
+    emps = session.exec(select(Employee)).all()
+    return [
+        {"employee_id": e.employee_id, "name": e.name, "phone_tail": e.phone_tail}
+        for e in emps
+    ]
