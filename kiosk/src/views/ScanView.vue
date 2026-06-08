@@ -3,6 +3,9 @@
     <input ref="hiddenInput" class="hidden-input" v-model="buffer"
            @keydown.enter.prevent="onBarcodeScan" autocomplete="off" autocorrect="off" />
 
+    <!-- 管理入口 -->
+    <a class="admin-entry" href="/admin/" target="_blank" title="管理控制台">⚙</a>
+
     <div class="dev-bar">
       <input class="dev-input" v-model="devInput"
              placeholder="调试：输入条码后按回车"
@@ -92,7 +95,7 @@
 <script setup>
 import { ref, nextTick, onMounted, onUnmounted } from "vue"
 
-const BASE_URL = import.meta.env.VITE_API_BASE || "http://localhost:8000"
+const BASE_URL = import.meta.env.VITE_API_BASE || window.location.origin
 const RESET_MS = 5000
 
 const state       = ref("idle")
@@ -209,6 +212,8 @@ function showError(msg) {
   font-family: "PingFang SC", "Microsoft YaHei", sans-serif; user-select: none;
 }
 .hidden-input { position: fixed; opacity: 0; width: 1px; height: 1px; top: 0; left: 0; pointer-events: none; }
+.admin-entry { position: fixed; top: 16px; right: 20px; color: #334155; font-size: 1.4rem; text-decoration: none; opacity: .4; transition: opacity .2s; z-index: 20; }
+.admin-entry:hover { opacity: 1; }
 .dev-bar { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 10; }
 .dev-input { padding: .5rem 1rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #f1f5f9; font-size: 1rem; width: 320px; outline: none; }
 .dev-input:focus { border-color: #38bdf8; }
