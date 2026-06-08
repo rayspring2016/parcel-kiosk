@@ -44,6 +44,15 @@
     .pkg-time { font-size: 12px; color: #999; }
 
     .error { color: #cf1322; font-size: 13px; margin-top: 8px; }
+    .claim-btn {
+      display: block; width: 100%; margin-top: 10px; padding: 8px;
+      background: #1677ff; color: #fff; border: none; border-radius: 8px;
+      font-size: 15px; cursor: pointer; font-weight: 600;
+    }
+    .claim-btn:active { background: #0958d9; }
+    .claim-btn:disabled { background: #ccc; }
+    .claim-ok { background: #f6ffed; color: #389e0d; font-weight: 600; padding: 8px;
+                border-radius: 8px; text-align: center; margin-top: 10px; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -109,6 +118,26 @@
       }).join('');
     } catch (e) {
       errEl.textContent = '查询失败，请稍后重试';
+    }
+  }
+
+  async function doClaim(pkgId) {
+    const q = document.getElementById('q').value.trim();
+    if (q.length !== 4 || !/^\d{4}$/.test(q)) {
+      document.getElementById('err').textContent = '请在输入框中输入手机尾号来认领';
+      return;
+    }
+    if (!confirm('确认认领这个包裹？')) return;
+    try {
+      const res = await fetch('/api/claim/' + pkgId + '?phone_tail=' + q, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        doSearch(); // Refresh results
+      } else {
+        document.getElementById('err').textContent = '认领失败：' + (data.detail || '未知错误');
+      }
+    } catch (e) {
+      document.getElementById('err').textContent = '网络错误，请重试';
     }
   }
 </script>
