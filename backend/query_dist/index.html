@@ -143,19 +143,6 @@
       document.getElementById('err').textContent = '网络错误，请重试';
     }
   }
-    if (!confirm('确认认领这个包裹？')) return;
-    try {
-      const res = await fetch('/api/claim/' + pkgId + '?phone_tail=' + q, { method: 'POST' });
-      const data = await res.json();
-      if (data.ok) {
-        doSearch(); // Refresh results
-      } else {
-        document.getElementById('err').textContent = '认领失败：' + (data.detail || '未知错误');
-      }
-    } catch (e) {
-      document.getElementById('err').textContent = '网络错误，请重试';
-    }
-  }
 </script>
 </body>
 </html>
