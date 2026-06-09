@@ -54,6 +54,8 @@
     .chart-card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
     .chart-card h3{font-size:14px;font-weight:600;color:#333;margin-bottom:14px}
     .chart-wrap{position:relative}
+    .chart-card canvas{display:block;width:100%!important;height:200px!important}
+    .courier-chart canvas{height:160px!important}
 
     /* 快递排行榜 */
     .courier-layout{display:flex;gap:20px;align-items:center}
@@ -206,11 +208,11 @@
     <div class="chart-grid">
       <div class="chart-card">
         <h3>每日入库趋势</h3>
-        <canvas id="chart-daily" height="90"></canvas>
+        <div style="position:relative;height:200px"><canvas id="chart-daily"></canvas></div>
       </div>
       <div class="chart-card">
         <h3>历史周趋势（近90天）</h3>
-        <canvas id="chart-weekly" height="90"></canvas>
+        <div style="position:relative;height:200px"><canvas id="chart-weekly"></canvas></div>
       </div>
     </div>
 
@@ -219,13 +221,13 @@
       <div class="chart-card">
         <h3>快递公司分布</h3>
         <div class="courier-layout">
-          <div class="courier-chart"><canvas id="chart-courier"></canvas></div>
+          <div class="courier-chart" style="position:relative;width:160px;height:160px"><canvas id="chart-courier"></canvas></div>
           <ul class="courier-list" id="courier-list"></ul>
         </div>
       </div>
       <div class="chart-card">
         <h3>员工收件排行 Top 10</h3>
-        <canvas id="chart-employee" height="90"></canvas>
+        <div style="position:relative;height:200px"><canvas id="chart-employee"></canvas></div>
       </div>
     </div>
   </div>
@@ -323,7 +325,7 @@ async function loadStats(){
     type:'line',
     data:{labels:dl,datasets:[{data:dv,borderColor:'#1677ff',
       backgroundColor:'rgba(22,119,255,0.08)',fill:true,tension:0.4,pointRadius:3,pointHoverRadius:5}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
   });
 
   // 历史周折线
@@ -333,7 +335,7 @@ async function loadStats(){
     type:'line',
     data:{labels:wl,datasets:[{data:wv,borderColor:'#722ed1',
       backgroundColor:'rgba(114,46,209,0.07)',fill:true,tension:0.4,pointRadius:3}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
   });
 
   // 快递分布甜甜圈
@@ -343,7 +345,7 @@ async function loadStats(){
   charts.courier=new Chart(document.getElementById('chart-courier'),{
     type:'doughnut',
     data:{labels:cL,datasets:[{data:cV,backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},
-    options:{plugins:{legend:{display:false}},cutout:'68%'}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'68%'}
   });
   // 排行榜
   const sorted=[...cL.map((n,i)=>({n,v:cV[i],c:COLORS[i]}))].sort((a,b)=>b.v-a.v);
@@ -367,6 +369,7 @@ async function loadStats(){
         borderRadius:4,borderSkipped:false}]
     },
     options:{
+      responsive:true,maintainAspectRatio:false,
       indexAxis:'y',
       plugins:{legend:{display:false}},
       scales:{x:{beginAtZero:true,ticks:{stepSize:1}},y:{ticks:{font:{size:12}}}}
@@ -412,7 +415,7 @@ async function markPickup(id,isUnclaimed=false){
   if(d.ok) isUnclaimed?loadUnclaimed():loadPackages();
 }
 
-loadStats();
+window.addEventListener('load', () => setTimeout(loadStats, 50));
 </script>
 </body>
 </html>

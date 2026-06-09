@@ -1,11 +1,22 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import Response
 from pathlib import Path
 from database import init_db
 from routers import scan, pickup, unclaimed, employees, workbench, query, admin
 
 app = FastAPI(title="Parcel Kiosk API")
+
+
+@app.middleware("http")
+async def no_cache_html(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.endswith(".html") or request.url.path.endswith("/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+    return response
+
 
 app.add_middleware(
     CORSMiddleware,
